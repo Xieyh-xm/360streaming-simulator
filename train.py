@@ -13,7 +13,7 @@ def train():
     max_training_timesteps = int(3e6)  # break training loop if timeteps > max_training_timesteps
 
     # ============== Save Model ==============
-    env_name = "two-tier"
+    env_name = "two-tier-wastage"
     print("Training environment name : " + env_name)
     save_model_freq = 100  # save model frequency (in num timesteps)
 
@@ -24,15 +24,15 @@ def train():
     K_epochs = 80  # update policy for K epochs in one PPO update
 
     eps_clip = 0.2  # clip parameter for PPO
-    gamma = 0.99  # discount factor
+    gamma = 0.95  # discount factor
 
     # 起始300轮
-    # lr_actor = 0.0003  # learning rate for actor network
-    # lr_critic = 0.001  # learning rate for critic network
+    lr_actor = 0.0003  # learning rate for actor network
+    lr_critic = 0.001  # learning rate for critic network
 
     # 300轮后
-    lr_actor = 0.00003  # learning rate for actor network
-    lr_critic = 0.0001  # learning rate for critic network
+    # lr_actor = 0.00003  # learning rate for actor network
+    # lr_critic = 0.0001  # learning rate for critic network
 
     random_seed = 0  # set random seed if required (0 = no random seed)
 
@@ -85,9 +85,9 @@ def train():
     log_f = open(log_f_name, "w+")
     log_f.write('episode,timestep,reward\n')
 
-    time_step = 700
+    time_step = 0
     i_episode = 0
-    ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
+    # ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
 
     # =============== 随机化trace ===============
     network_batch = 3

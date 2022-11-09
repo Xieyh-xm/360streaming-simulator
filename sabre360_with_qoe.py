@@ -25,6 +25,7 @@
 '''
 
 import copy
+import numpy as np
 from utils import Pose2VideoXY, calculate_viewing_proportion
 # Units used throughout:
 #     size     : bits
@@ -984,10 +985,19 @@ class Session:
 
         # =============== 新增变量 ==================
         self.total_download_time = 0
-        self.qoe_one_step = 0
-        self.total_qoe = 0
         self.prev_pose_trace = {}
         self.last_played_segment = 0
+        # --------------- qoe相关 -------------------
+        self.score_one_step = 0
+        self.total_score = 0
+
+        self.total_qoe = 0
+        self.total_quality = 0
+        self.total_stall_time = 0
+        self.total_var_space = 0
+        self.total_var_time = 0
+        self.bandwidth_wastage = 0
+        self.bandwidth_usage = 0
 
     def play_event(self, time):
         # triggered from HeadsetModel
@@ -1106,8 +1116,9 @@ class Session:
                 self.consumed_download_time = 0
                 self.network_model.delay(delay)
                 wall_time, stall_time = self.consume_download_time(delay, time_is_play_time=True)
+                self.session_events.trigger_network_delay_event(delay)
 
-                ''' 记录每一个segment的pose trace'''
+                ''' 记录每一个播放过segment的pose trace'''
                 cur_played_segment = self.buffer.get_played_segments()  # 正在播放的segment
                 if self.buffer.get_played_segment_partial() == 0:  # 尚未开始播放
                     cur_played_segment -= 1
@@ -1116,12 +1127,12 @@ class Session:
                     end_time = (self.last_played_segment + 1) * self.manifest.segment_duration
                     pose_list = self.user_model.get_pose_in_qoe(start_time, end_time)
                     self.prev_pose_trace[self.last_played_segment] = pose_list[0]
-
                     self.last_played_segment += 1
                 assert self.last_played_segment > cur_played_segment
 
-                self.session_events.trigger_network_delay_event(delay)
-                self.log_file.log_delay(delay)
+                self.score_one_step = - 5. * stall_time
+                self.total_score += self.score_one_step
+                # self.log_file.log_delay(delay)
 
             if action is None:
                 continue
@@ -1135,7 +1146,7 @@ class Session:
                 else:
                     is_first_tile = False
                 size = self.manifest.segments[action[i].segment][action[i].tile][action[i].quality]  # 读取待下载的tile的size
-                bandwidth_usage += size
+                bandwidth_usage += size  # bits
                 self.consumed_download_time = 0
                 ''' 模拟下载过程 '''
                 progress = self.network_model.download(size, action[i], is_first_tile,
@@ -1172,7 +1183,7 @@ class Session:
             assert len(pose_list) > 0
             # -----------------------------------------------------
             # quality是视窗内每个tile的平均码率
-            bandwidth_usage /= 1024.
+            bandwidth_usage /= 1024.  # kbits
             if self.buffer.get_play_head() <= segment_idx * self.manifest.segment_duration:
                 delta_quality = self.calculate_delta_quality(pose_list, segment_idx, download_tile)
                 delta_var_space = self.calculate_delta_var_space(pose_list, segment_idx, download_tile)
@@ -1184,10 +1195,17 @@ class Session:
                 delta_var_time = 0
                 bandwidth_wastage = bandwidth_usage
 
+            self.total_quality += delta_quality / 8  # B
+            self.total_stall_time += stall_time  # ms
+            self.total_var_space += delta_var_space
+            self.total_var_time += delta_var_time
+            self.bandwidth_usage += bandwidth_usage / 8  # B
+            self.bandwidth_wastage += bandwidth_wastage / 8  # B
+
             # 2. 线性组合
             # self.qoe_one_step = delta_quality / 8 - 1.85 * stall_time - 0.5 * delta_var_space - 1 * delta_var_time - 0.5 * bandwidth_usage / 8
-            self.qoe_one_step = delta_quality / 8 - 1.85 * stall_time - 0.5 * delta_var_space - 1 * delta_var_time - 0.5 * bandwidth_wastage / 8
-            self.total_qoe += self.qoe_one_step
+            self.score_one_step = delta_quality / 8 - 5. * stall_time - 0.5 * delta_var_space - 1 * delta_var_time - 0.5 * bandwidth_wastage / 8
+            self.total_score += self.score_one_step
 
             for i in range(len(action)):
                 progress = progress_list[i]
@@ -1309,8 +1327,21 @@ class Session:
         wastage = wastage / (len(pose_list) * 1024.)
         return wastage
 
-    def get_total_qoe(self):
-        return self.total_qoe
+    def get_total_metrics(self):
+        metrics = np.zeros(8)
+        # [0]score [1]qoe [2]quality [3]stall_time [4]var_space
+        # [5]var_time [6]bandwidth_usage [7]bandwidth_wastage
+        metrics[0] = self.total_score
+        metrics[1] = self.total_quality - 5. * self.total_stall_time - 0.5 * self.total_var_space - \
+                     1 * self.total_stall_time
+        metrics[2] = self.total_quality  # B
+        metrics[3] = self.total_stall_time  # ms
+        metrics[4] = self.total_var_space
+        metrics[5] = self.total_var_time
+        metrics[6] = self.bandwidth_usage  # B
+        metrics[7] = self.bandwidth_wastage  # B
+
+        return metrics
 
 
 if __name__ == '__main__':

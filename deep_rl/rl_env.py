@@ -197,7 +197,7 @@ class RLEnv:
         if play_head >= self.video_time:  # 当前视频播放完成
             done = True
         if action is None:
-            return self.state, one_step_reward, done
+            return self.state, 0, done
 
         ''' ================== 更新缓冲区状态 ================== '''
         buffers = self.session.session_info.get_buffer()
@@ -273,7 +273,7 @@ class RLEnv:
         # print('download time = ', self.session.total_download_time)
         # print('base_buffer_depth = ', self.base_buffer_depth)
         # print('qoe_one_step = ', self.session.qoe_one_step, '\n')
-        return self.state, self.session.qoe_one_step, done
+        return self.state, self.session.score_one_step, done
 
     def update_throughput(self, action):
         ''' 更新历史带宽信息 '''
@@ -440,8 +440,9 @@ class RLEnv:
             self.session.consumed_download_time = 0
             self.session.network_model.delay(delay)
             wall_time, stall_time = self.session.consume_download_time(delay, time_is_play_time=True)
+            self.session.session_events.trigger_network_delay_event(delay)
 
-            ''' 记录每一个segment的pose trace'''
+            ''' 记录每一个播放过segment的pose trace'''
             cur_played_segment = self.session.buffer.get_played_segments()  # 正在播放的segment
             if self.session.buffer.get_played_segment_partial() == 0:  # 尚未开始播放
                 cur_played_segment -= 1
@@ -453,8 +454,8 @@ class RLEnv:
                 self.session.last_played_segment += 1
             assert self.session.last_played_segment > cur_played_segment
 
-            self.session.qoe_one_step = - 1.85 * stall_time
-            self.session.total_qoe += self.session.qoe_one_step
+            self.session.score_one_step = - 5. * stall_time
+            self.session.total_score += self.session.score_one_step
             return
 
         self.session.total_download_time = 0  # 一次决策的总下载用时
@@ -517,10 +518,9 @@ class RLEnv:
         assert bandwidth_wastage <= bandwidth_usage
 
         # 2. 线性组合
-
         self.session.qoe_one_step = delta_quality / 8 - 5. * stall_time - 0.5 * delta_var_space - 1. * delta_var_time - 0.5 * bandwidth_wastage / 8
         # self.session.qoe_one_step = delta_quality / 8 - 1.85 * stall_time - 0.5 * delta_var_space - 1 * delta_var_time - 0.5 * bandwidth_usage / 8
-        self.session.total_qoe += self.session.qoe_one_step
+        self.session.total_score += self.session.score_one_step
 
         for i in range(len(action)):
             progress = progress_list[i]
