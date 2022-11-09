@@ -1,0 +1,9 @@
+*~
+__pycache__
+.idea/
+.pytest_cache/
+plot/
+log/
+deep_rl/ppo_logs/
+deep_rl/PPO_preTrained/
+.DS_Store
