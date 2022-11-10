@@ -1411,5 +1411,3 @@ if __name__ == '__main__':
 
     session = Session(config)
     session.run()
-    total_qoe = session.total_qoe
-    print("total qoe = %.2f" % total_qoe)
