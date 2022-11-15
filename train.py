@@ -13,26 +13,28 @@ def train():
     max_training_timesteps = int(3e6)  # break training loop if timeteps > max_training_timesteps
 
     # ============== Save Model ==============
-    env_name = "two-tier-wastage"
+    env_name = "with acc"
     print("Training environment name : " + env_name)
-    save_model_freq = 100  # save model frequency (in num timesteps)
+    save_model_freq = 50  # save model frequency (in num timesteps)
 
-    #  =============== Hyper-parameter Setting ===============
+    # =============== Hyper-parameter Setting ===============
     device = torch.device('cpu')
     print("Device set to : ", device)
 
-    K_epochs = 80  # update policy for K epochs in one PPO update
+    # K_epochs = 80  # update policy for K epochs in one PPO update
+    K_epochs = 40  # update policy for K epochs in one PPO update
 
-    eps_clip = 0.2  # clip parameter for PPO
+    # eps_clip = 0.2  # clip parameter for PPO
+    eps_clip = 0.1  # clip parameter for PPO
     gamma = 0.95  # discount factor
 
     # 起始300轮
-    lr_actor = 0.0003  # learning rate for actor network
-    lr_critic = 0.001  # learning rate for critic network
+    # lr_actor = 0.0003  # learning rate for actor network
+    # lr_critic = 0.001  # learning rate for critic network
 
     # 300轮后
-    # lr_actor = 0.00003  # learning rate for actor network
-    # lr_critic = 0.0001  # learning rate for critic network
+    lr_actor = 0.00003  # learning rate for actor network
+    lr_critic = 0.0001  # learning rate for critic network
 
     random_seed = 0  # set random seed if required (0 = no random seed)
 
@@ -85,20 +87,20 @@ def train():
     log_f = open(log_f_name, "w+")
     log_f.write('episode,timestep,reward\n')
 
-    time_step = 0
+    time_step = 200
     i_episode = 0
-    # ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
+    ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
 
     # =============== 随机化trace ===============
-    network_batch = 3
+    network_batch = 4
     network_dict_size = 40
     network_list = range(network_dict_size)
 
-    video_batch = 2
-    video_dict_size = 9
+    video_batch = 4
+    video_dict_size = 18
     video_list = range(video_dict_size)
 
-    user_batch = 3
+    user_batch = 5
     user_dict_size = 48
     user_list = range(user_dict_size)
     # ===========================================
@@ -109,12 +111,14 @@ def train():
         time_step += 1
         ticks = int(time.time())
         random.seed(ticks)
+        cnt = 0
         for net_id in random.sample(network_list, network_batch):
             for video_id in random.sample(video_list, video_batch):
                 for user_id in random.sample(user_list, user_batch):
                     state = env.reset(net_id, video_id, user_id)
                     done = False
                     while not done:
+                        cnt += 1
                         # 1. select action with policy
                         action = ppo_agent.select_action(state)
                         state, reward, done = env.step(action)
@@ -123,7 +127,7 @@ def train():
                         ppo_agent.buffer.is_terminals.append(done)
                         cur_ep_reward += reward
         ppo_agent.update()
-        print_running_reward = cur_ep_reward / (network_batch * video_batch * user_batch)
+        print_running_reward = cur_ep_reward / cnt
         print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {:.2f}".format(i_episode, time_step,
                                                                                     print_running_reward))
         log_f.write('{},{},{:.2f}\n'.format(i_episode, time_step, print_running_reward))

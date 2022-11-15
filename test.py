@@ -1,9 +1,11 @@
 ''' 用于测试的程序 '''
 import random
 from abr.myABR import TestAbr
+from deep_rl.solution import Melody
 import numpy as np
 from utils import get_trace_file
 from sabre360_with_qoe import Session
+from tqdm import tqdm
 
 NETWORK_TRACE_NUM = 40
 VIDEO_TRACE_NUM = 18
@@ -14,16 +16,21 @@ default_config = {}
 default_config['ewma_half_life'] = [4, 1]  # seconds
 default_config['buffer_size'] = 5  # seconds
 default_config['log_file'] = 'log/session.log'
-default_config['abr'] = TestAbr  # 不调用
+default_config['abr'] = TestAbr
+# default_config['abr'] = Melody
 
 
 def print_metrics(metrics):
-    ''' 打印各项指标
-       [0]score [1]qoe [2]quality [3]stall_time [4]var_space [5]var_time [6]bandwidth_usage [7]bandwidth_wastage'''
-    print('Score: {.2f}'.format(metrics[0]))
-    print('QoE: {.2f}\t\tbandwidth_usage: {.2f}'.format(metrics[1], metrics[6]))
-    print('Quality: {.2f}\tStall time: {.2f}\t'.format(metrics[2], metrics[3]))
-    print('Oscillation in space: {.2f}\tOscillation in time:{.2f}'.format(metrics[4], metrics[5]))
+    ''' ====== 打印各项指标 =================================
+       [0]score [1]qoe [2]quality [3]stall_time [4]var_space
+       [5]var_time [6]bandwidth_usage [7]bandwidth_wastage'''
+    print("------------------------------------------------------------------")
+    print('Score: {:.2f}'.format(metrics[0]))
+    print('QoE: {:.2f}\t\tbandwidth_usage: {:.2f}'.format(metrics[1], metrics[6]))
+    print('Quality: {:.2f}\tStall time: {:.2f}\t'.format(metrics[2], metrics[3]))
+    print('Oscillation in space: {:.2f}\tOscillation in time: {:.2f}'.format(metrics[4], metrics[5]))
+    wastage_ratio = metrics[7] / metrics[6]
+    print('Wastage ratio:{:.2f}'.format(wastage_ratio))
 
 
 def test(net_id, video_id, user_id):
@@ -33,10 +40,12 @@ def test(net_id, video_id, user_id):
     config['bandwidth_trace'] = network_file
     config['manifest'] = video_file
     config['pose_trace'] = user_file
-    print("network trace: {}\tvideo trace: {}\tuser trace={}".format(network_file, video_file, user_file))
+    # print("------------------------------------------------------------------")
+    # print("network trace: {}\nvideo trace: {}\nuser trace: {}".format(network_file, video_file, user_file))
     session = Session(config)
     session.run()
     avgs = session.get_total_metrics()
+    print_metrics(avgs)
     return avgs
 
 
@@ -61,19 +70,12 @@ def test_video_samples(net_id, video_batch=VIDEO_TRACE_NUM, user_batch=USER_TRAC
 def test_network_samples(network_batch=NETWORK_TRACE_NUM, video_batch=VIDEO_TRACE_NUM, user_batch=USER_TRACE_NUM):
     avgs = np.zeros(8)  # [0]score [1]qoe [2]quality [3]stall_time [4]var_space [5]var_time [6]bandwidth_usage
     network_list = range(NETWORK_TRACE_NUM)
-    for net_id in random.sample(network_list, network_batch):
+    for net_id in tqdm(random.sample(network_list, network_batch)):
         avgs += test_video_samples(net_id, video_batch, user_batch)
     avgs /= network_batch
-
-    print("Score: {}".format(avgs[0]))
-    print("QoE: {}".format(avgs[1]))
-    print("Quality: {}".format(avgs[2]))
-    print("Stall time: {}".format(avgs[3]))
-    print("Oscillation in time: {}".format(avgs[4]))
-    print("Oscillation in space: {}".format(avgs[5]))
-    print("Bandwidth usage: {}".format(avgs[6]))
-    print("Bandwidth wastage: {}".format(avgs[7]))
+    print_metrics(avgs)
 
 
 if __name__ == '__main__':
-    test_network_samples(network_batch=10, video_batch=5, user_batch=20)
+    # test_network_samples(network_batch=10, video_batch=5, user_batch=5)
+    test(0, 0, 0)

@@ -1,5 +1,6 @@
 import math
 from collections import namedtuple
+from abr.TiledAbr import TiledAbr
 
 TiledAction = namedtuple('TiledAction', 'segment tile quality delay')
 
@@ -11,30 +12,6 @@ def str_tiled_action(self):
 
 TiledAction.__str__ = str_tiled_action
 
-
-class TiledAbr:
-
-    # TODO: rewrite report_*() to use SessionEvents
-
-    def __init__(self):
-        pass
-
-    def get_action(self):
-        raise NotImplementedError
-
-    def check_abandon(self, progress):
-        return None
-
-    def report_action_complete(self, progress):
-        pass
-
-    def report_action_cancelled(self, progress):
-        pass
-
-    def report_seek(self, where):
-        raise NotImplementedError
-
-
 # todo: abr for testing environment
 class TestAbr(TiledAbr):
     '''
@@ -42,6 +19,7 @@ class TestAbr(TiledAbr):
     '''
 
     def __init__(self, config, session_info, session_events):
+        # print("<< test abr >>")
         self.session_info = session_info
         self.session_events = session_events
         self.max_depth = math.floor(session_info.buffer_size / session_info.get_manifest().segment_duration)
@@ -81,15 +59,12 @@ class TestAbr(TiledAbr):
 
         # if segment is None, return None 没有可下载的segment
         if segment is None:
-            return None
-        # todo: 视角预测模块
-        pred_view = self.session_info.get_viewport_predictor().predict_tiles(segment)
-        if pred_view:
-            (x_pred, y_pred) = pred_view
-            # print("pred_view = ", pred_view)
+            action = []
+            action.append(TiledAction(-1, -1, -1, 500))
+            return action
 
         ''' 2. 确定码率 '''
-        qualities = self.allocate_quality(2, segment)
+        qualities = self.allocate_quality(0, segment)
         ''' 3. 确定tile '''
         for t in blank_tiles:
             tile = t
@@ -98,6 +73,8 @@ class TestAbr(TiledAbr):
         for tile in blank_tiles:
             action.append(TiledAction(segment, tile, qualities[tile], 0))
         # action.append(TiledAction(segment, tile, qualities[tile], 0))
+        if len(action) == 0:
+            action.append(TiledAction(-1, -1, -1, 500))
         return action
 
     def allocate_quality(self, bits, segment):

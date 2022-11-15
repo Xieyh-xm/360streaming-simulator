@@ -216,6 +216,7 @@ class TiledBuffer:
     def play_out_buffer(self, play_time):
         ''' 更新播放后buffer '''
         self.played_segment_partial += play_time
+        self.played_segment_partial = math.floor(self.played_segment_partial)
         if self.played_segment_partial >= self.segment_duration:
             discard = int(self.played_segment_partial // self.segment_duration)
             del self.buffers[:discard]
@@ -225,12 +226,14 @@ class TiledBuffer:
 
 class SessionInfo:
 
-    def __init__(self, manifest, buffer, buffer_size):
+    def __init__(self, manifest, buffer, buffer_size, prev_pose_trace):
         self.manifest = manifest
         self.buffer = buffer
         self.buffer_size = buffer_size
         self.wall_time = 0
         self.presentation_time = 0
+        self.total_download_time = 0
+        self.prev_pose_trace = prev_pose_trace
 
     def set_throughput_estimator(self, throughput_estimator):
         self.throughput_estimator = throughput_estimator
@@ -267,6 +270,15 @@ class SessionInfo:
 
     def get_wall_time(self):
         return self.wall_time
+
+    def set_total_download_time(self, time):
+        self.total_download_time = time
+
+    def get_total_download_time(self):
+        return self.total_download_time
+
+    def get_prev_pose_trace(self):
+        return self.prev_pose_trace
 
 
 class SessionEvents:
@@ -549,22 +561,6 @@ class HeadsetModel:
             time = buffer_length
 
         wall_time = time
-        # if self.startup_wait > 0:
-        #     if time_is_play_time:
-        #         time += self.startup_wait
-        #         wall_time += self.startup_wait
-        #
-        #     if time >= self.startup_wait:
-        #         stall = self.startup_wait
-        #         self.startup_wait = 0
-        #         time -= stall
-        #         self.is_playing = True
-        #         self.session_events.trigger_stall_event(stall)
-        #     else:
-        #         self.startup_wait -= time
-        #         self.session_events.trigger_stall_event(time)
-        #         return time
-
         partial_time = 0
         while partial_time < time:
             if self.pose_iterator is None:  # 初始化 self.pose_iterator
@@ -620,8 +616,11 @@ class UserModel:
     def get_pose_in_qoe(self, start_time, end_time) -> list:
         pose_list = []
         index = 0
-        while self.pose_trace[index + 1].play_time <= start_time:
+        while index + 1 < len(self.pose_trace) and self.pose_trace[index + 1].play_time <= start_time:
             index += 1
+            if index + 1 >= len(self.pose_trace):
+                print(self.pose_trace[index + 1].play_time)
+                print(start_time)
         last_log_time = self.pose_trace[index + 1].play_time
         pose_list.append(self.pose_trace[index + 1].pose)
         # while index + 1 < len(self.pose_trace) and self.pose_trace[index + 1].play_time <= end_time:
@@ -952,7 +951,8 @@ class Session:
         self.buffer_size = config['buffer_size'] * 1000
 
         self.buffer = TiledBuffer(self.manifest.segment_duration, self.manifest.tiles)
-        self.session_info = SessionInfo(self.manifest, self.buffer, self.buffer_size)
+        self.prev_pose_trace = {}
+        self.session_info = SessionInfo(self.manifest, self.buffer, self.buffer_size, self.prev_pose_trace)
 
         self.log_file = LogFile(self.session_info, config['log_file'])
         self.session_info.set_log_file(self.log_file)
@@ -985,7 +985,6 @@ class Session:
 
         # =============== 新增变量 ==================
         self.total_download_time = 0
-        self.prev_pose_trace = {}
         self.last_played_segment = 0
         # --------------- qoe相关 -------------------
         self.score_one_step = 0
@@ -1047,75 +1046,30 @@ class Session:
 
     def run(self):
         global g_debug_cycle
-
         video_time = self.manifest.segment_duration * len(self.manifest.segments)
-        abandon_action = None
         cycle_index = -1
-        tile_prediction_string = None
-
         # 模拟播放过程
         while self.session_info.buffer.get_play_head() < video_time:
-            cycle_index += 1  # 日志文件循环计数
-            g_debug_cycle = cycle_index
-            self.log_file.log_new_cycle(cycle_index)
-
             # ----------> 不放弃下载 <----------
-            if abandon_action is None:
-                tput = self.estimator.get_throughput()  # 带宽估计
-                if tput is None:  # initial
-                    # TODO: better initial estimate? 是否有更好的初始估计？
-                    tput = 0
-                self.log_file.log_tput(tput)  # 日志输出-带宽估计
-
-                # 获取最长的播放距离
-                view_log_begin = self.buffer.get_played_segments()
-                view_log_end = view_log_begin + self.buffer.get_buffer_depth() + 1
-                view_log_end = min(view_log_end, len(self.manifest.segments))
-
-                '''=================> 做abr决策 <================='''
-                action = self.abr.get_action()  # 返回action列表，包含同一segment下多个tile
-                if action is None:
-                    old_quality = None
-                    self.log_file.log_abr(action)
-                else:
-                    for i in range(len(action)):
-                        old_quality = self.buffer.get_buffer_element(action[i].segment, action[i].tile)
-                        if old_quality is None:
-                            self.log_file.log_abr(action[i])
-                        else:
-                            self.log_file.log_abr_replace(action[i], old_quality)
-            else:  # already have action lined up from abandon
-                # todo: abandon_action时的action是否也为数组？
-                action = abandon_action
-                for i in range(len(action)):
-                    old_quality = self.buffer.get_buffer_element(action[i].segment, action[i].tile)
-                    if old_quality is None:
-                        self.log_file.log_abr(action[i], from_abandoned=True)
-                    else:
-                        self.log_file.log_abr(action[i], old_quality, from_abandoned=True)
-                abandon_action = None
-
+            # 获取最长的播放距离
+            view_log_begin = self.buffer.get_played_segments()
+            view_log_end = view_log_begin + self.buffer.get_buffer_depth() + 1
+            view_log_end = min(view_log_end, len(self.manifest.segments))
+            '''=================> 做abr决策 <================='''
+            action = self.abr.get_action()  # 返回action列表，包含同一segment下多个tile
             delay = 0
-            if action is None:
-                # pause until the end of the current segment
-                delay = self.manifest.segment_duration - self.session_info.buffer.get_played_segment_partial()
-                # delay = video_time - self.session_info.buffer.get_play_head()
-            elif action[0].delay is not None and action[0].delay > 0:
+            if action[0].delay is not None and action[0].delay > 0:
                 delay = action[0].delay
-
-            # 最大buffer不设限
-            # if action is not None:
-            #     buffer_end = (action[0].segment + 1) * self.manifest.segment_duration
-            #     if delay < buffer_end - self.buffer.get_play_head() - self.buffer_size - 0.001:
-            #         # 避免缓冲区上溢
-            #         delay = buffer_end - self.buffer.get_play_head() - self.buffer_size
-            #         self.log_file.log_str('Buffer full: update delay to %.3fs' % (delay / 1000))
-
+            ''' --------- 暂停下载 ---------'''
             if delay > 0:
                 # shares self.consumed_download_time with self.consume_download_time()
                 self.consumed_download_time = 0
                 self.network_model.delay(delay)
+
+                ''' 模拟视频播放进程 '''
                 wall_time, stall_time = self.consume_download_time(delay, time_is_play_time=True)
+
+                ''' 网络模拟delay '''
                 self.session_events.trigger_network_delay_event(delay)
 
                 ''' 记录每一个播放过segment的pose trace'''
@@ -1130,29 +1084,25 @@ class Session:
                     self.last_played_segment += 1
                 assert self.last_played_segment > cur_played_segment
 
-                self.score_one_step = - 5. * stall_time
+                ''' QoE计算 '''
+                self.score_one_step = - 6. * stall_time
                 self.total_score += self.score_one_step
-                # self.log_file.log_delay(delay)
-
-            if action is None:
                 continue
-            # todo：改成一次性可下载多个tile - finished
+            ''' --------- 下载tile ---------'''
             self.total_download_time = 0
             progress_list = []
             bandwidth_usage = 0
             for i in range(len(action)):
-                if i == 0:
-                    is_first_tile = True
-                else:
-                    is_first_tile = False
+                is_first_tile = True if i == 0 else False
                 size = self.manifest.segments[action[i].segment][action[i].tile][action[i].quality]  # 读取待下载的tile的size
                 bandwidth_usage += size  # bits
                 self.consumed_download_time = 0
                 ''' 模拟下载过程 '''
-                progress = self.network_model.download(size, action[i], is_first_tile,
-                                                       self.check_abandon)
+                progress = self.network_model.download(size, action[i], is_first_tile, self.check_abandon)
                 progress_list.append(copy.deepcopy(progress))
                 self.total_download_time += progress.time
+
+            self.session_info.set_total_download_time(self.total_download_time)
 
             ''' 模拟视频播放进程 '''
             wall_time, stall_time = self.consume_download_time(self.total_download_time)
@@ -1168,6 +1118,7 @@ class Session:
                 self.prev_pose_trace[self.last_played_segment] = pose_list[0]
 
                 self.last_played_segment += 1
+
             assert self.last_played_segment > cur_played_segment
 
             ''' QoE计算 '''
@@ -1203,42 +1154,45 @@ class Session:
             self.bandwidth_wastage += bandwidth_wastage / 8  # B
 
             # 2. 线性组合
-            # self.qoe_one_step = delta_quality / 8 - 1.85 * stall_time - 0.5 * delta_var_space - 1 * delta_var_time - 0.5 * bandwidth_usage / 8
-            self.score_one_step = delta_quality / 8 - 5. * stall_time - 0.5 * delta_var_space - 1 * delta_var_time - 0.5 * bandwidth_wastage / 8
+            self.score_one_step = 2 * delta_quality - 6. * stall_time - 0.5 * delta_var_space - 0.5 * delta_var_time - 0.4 * bandwidth_wastage / 8
+            # self.score_one_step = delta_quality / 8 - 5. * stall_time - 0.5 * delta_var_space - 0.5 * delta_var_time - 0.2 * bandwidth_wastage / 8
             self.total_score += self.score_one_step
 
             for i in range(len(action)):
                 progress = progress_list[i]
-                if progress.abandon is None:  # 没有放弃下载
-                    self.estimator.push(progress)
-                    self.abr.report_action_complete(progress)
-                    self.buffer.put_in_buffer(progress.segment, progress.tile, progress.quality)  # 将下载的chunk放入buffer
-                    self.log_file.log_download(progress)
-                else:  # 放弃下载
-                    abandon_action = []
-                    self.abr.report_action_cancelled(progress)
-                    abandon_action.append(progress.abandon)
-                    self.log_file.log_abandoned(progress)
-                self.log_file.log_buffer(self.buffer)
+                self.estimator.push(progress)
+                self.abr.report_action_complete(progress)
+                self.buffer.put_in_buffer(progress.segment, progress.tile, progress.quality)  # 将下载的chunk放入buffer
 
     def calculate_delta_quality(self, pose_list, segment_idx, download_tile):
         bitrate = self.manifest.bitrates
         buffer_contents = self.buffer.get_buffer_contents(segment_idx)
         sum_delta_quality = 0
+        # 计算视窗平均面积
+        sum_proportion = 0
+        for i in range(len(pose_list)):
+            video_x, video_y = Pose2VideoXY(pose_list[i])
+            for tile_idx in range(TILES_X * TILES_Y):  # 遍历每个tile
+                proportion = calculate_viewing_proportion(video_x, video_y, tile_idx)
+                sum_proportion += proportion
+        avg_proportion = sum_proportion / len(pose_list)
+
+        # 计算delta_quality
         for i in range(len(pose_list)):
             video_x, video_y = Pose2VideoXY(pose_list[i])
             delta_quality_per_pose = 0
             for tile_idx in download_tile:
                 proportion = calculate_viewing_proportion(video_x, video_y, tile_idx)
+                sum_proportion += proportion
                 if buffer_contents is None or buffer_contents[tile_idx] is None:  # 从未下载过
                     delta_quality_per_pose += proportion * bitrate[download_tile[tile_idx]]
                 else:  # 下载过
                     delta_quality_per_pose += proportion * max(
                         bitrate[download_tile[tile_idx]] - buffer_contents[tile_idx], 0)
             sum_delta_quality += delta_quality_per_pose
-        delta_quality = sum_delta_quality / len(pose_list)
-        self.buffer.add_segment_quality(segment_idx, delta_quality)
 
+        delta_quality = sum_delta_quality / (len(pose_list) * avg_proportion)
+        self.buffer.add_segment_quality(segment_idx, delta_quality)
         return delta_quality
 
     def calculate_delta_var_space(self, pose_list, segment_idx, download_tile):
@@ -1256,36 +1210,32 @@ class Session:
                     buffer_contents[tile_idx] = buffer_contents[tile_idx]
                 else:
                     buffer_contents[tile_idx] = max(buffer_contents[tile_idx], download_tile[tile_idx])
-
-        sum_var_space = 0
-
-        # 计算avg
-        sum_of_proportion = 0
+        # 计算视窗平均面积
+        sum_proportion = 0
         for i in range(len(pose_list)):
             video_x, video_y = Pose2VideoXY(pose_list[i])
-            for tile_idx in range(len(buffer_contents)):
-                if buffer_contents[tile_idx] is not None:  # 遍历下载的tile
-                    proportion = calculate_viewing_proportion(video_x, video_y, tile_idx)
-                    sum_of_proportion += proportion
-        avg_proportion = sum_of_proportion / len(pose_list)
-        avg_quality = 0
-        if avg_proportion != 0:
-            avg_quality = self.buffer.get_segment_quality(segment_idx) / avg_proportion
+            for tile_idx in range(TILES_X * TILES_Y):  # 遍历每个tile
+                proportion = calculate_viewing_proportion(video_x, video_y, tile_idx)
+                sum_proportion += proportion
+        avg_proportion = sum_proportion / len(pose_list)
 
+        avg_quality = self.buffer.get_segment_quality(segment_idx)
+
+        sum_var_space = 0
         for i in range(len(pose_list)):
             video_x, video_y = Pose2VideoXY(pose_list[i])
             var_space_per_pose = 0
-            sum_of_proportion = 0
             for tile_idx in range(len(buffer_contents)):
-                if buffer_contents[tile_idx] is not None:  # 下载的tile
-                    proportion = calculate_viewing_proportion(video_x, video_y, tile_idx)
-                    sum_of_proportion += proportion
-                    # 空间平滑度，标准差
-                    var_space_per_pose += proportion * (bitrate[buffer_contents[tile_idx]] - avg_quality) ** 2
-            sum_var_space = 0
-            if sum_of_proportion != 0:
-                sum_var_space += var_space_per_pose / sum_of_proportion
+                proportion = calculate_viewing_proportion(video_x, video_y, tile_idx)
+                if buffer_contents[tile_idx] is not None:
+                    quality = bitrate[buffer_contents[tile_idx]]
+                else:
+                    quality = -1
+                # 空间平滑度，标准差
+                var_space_per_pose += proportion * (quality - avg_quality) ** 2
+            sum_var_space += var_space_per_pose / avg_proportion
         quality_var_space = math.sqrt(sum_var_space / len(pose_list))
+
         last_quality_var_space = self.buffer.get_quality_var_space(segment_idx)
         self.buffer.save_quality_var_space(segment_idx, quality_var_space)
         delta_var_space = quality_var_space - last_quality_var_space  # 计算时需要加上上次的，减掉下次的
@@ -1316,13 +1266,15 @@ class Session:
         wastage = 0
         size_info = self.manifest.segments[segment_idx]
         buffer_contents = self.buffer.get_buffer_contents(segment_idx)
+
         for i in range(len(pose_list)):
             video_x, video_y = Pose2VideoXY(pose_list[i])
             for tile_idx in download_tile:
                 proportion = calculate_viewing_proportion(video_x, video_y, tile_idx)
-                if proportion == 0:
+                if proportion == 0:  # 不可见tile
                     wastage += size_info[tile_idx][download_tile[tile_idx]]
                 elif buffer_contents is not None and buffer_contents[tile_idx] is not None:
+                    # 重复下载
                     wastage += size_info[tile_idx][buffer_contents[tile_idx]]
         wastage = wastage / (len(pose_list) * 1024.)
         return wastage
@@ -1333,7 +1285,7 @@ class Session:
         # [5]var_time [6]bandwidth_usage [7]bandwidth_wastage
         metrics[0] = self.total_score
         metrics[1] = self.total_quality - 5. * self.total_stall_time - 0.5 * self.total_var_space - \
-                     1 * self.total_stall_time
+                     0.5 * self.total_stall_time
         metrics[2] = self.total_quality  # B
         metrics[3] = self.total_stall_time  # ms
         metrics[4] = self.total_var_space

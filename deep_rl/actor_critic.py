@@ -1,10 +1,10 @@
 import math
-
 import torch
 import torch.nn as nn
 import numpy as np
 from torch.distributions import Categorical
 import torch.nn.functional as F
+from myPrint import print_debug
 
 
 class ActorCritic(nn.Module):
@@ -54,19 +54,20 @@ class ActorCritic(nn.Module):
         mask[(et_buffer_len + 1) * bit_level_et:25] = 1
         # todo 3. 不对播放前来不及下载完成的segment进行ET层下载。
         # 4. 不选中没有可更新数据的segment进行下载
-        download_bit_bt = state_numpy[0, 13]  # bt待下载数据量
+        download_bit_bt = state_numpy[0, 12]  # bt待下载数据量
         if download_bit_bt == 0:
             mask[self.action_dim - 2] = 1
         else:
             mask[self.action_dim - 1] = 1  # 有可下载的bt，就不sleep
-        download_bit_et = state_numpy[0, 14:19]  # et待下载数据量
+        download_bit_et = state_numpy[0, 13:18]  # et待下载数据量
         for segment_id in range(5):
             if download_bit_et[segment_id] == 0:
                 mask[segment_id * bit_level_et:(segment_id + 1) * bit_level_et] = 1
         '''============================================='''
-
+        print_debug("mask = ", mask)
         mask = torch.BoolTensor(mask).to(self.device)
         mask = mask.unsqueeze(0)
+        # print(mask)
         ''' 动作掩蔽 '''
         # action_probs = F.softmax(self.actor(state) * mask, dim=-1)  # action masking
         # 将mask中为1的部分使用value替代（value通常是一个极大或极小值），0的部分保持原值
@@ -79,9 +80,7 @@ class ActorCritic(nn.Module):
 
     def evaluate(self, state, action):
         state_numpy = state.numpy()
-
         mask = np.zeros((state_numpy.shape[0], self.action_dim))
-
         '''=============== calculate mask ==============='''
         for k in range(state_numpy.shape[0]):
             # 1. 基础层buffer要先于增强层buffer的下载
@@ -92,13 +91,14 @@ class ActorCritic(nn.Module):
             et_buffer_len = int(state_numpy[k, 11])  # et层
             mask[k, (et_buffer_len + 1) * bit_level_et:25] = 1
             # todo 3. 不对播放前来不及下载完成的segment进行ET层下载。
+
             # 4. 不选中没有可更新数据的segment进行下载
-            download_bit_bt = state_numpy[k, 13]  # bt待下载数据量
+            download_bit_bt = state_numpy[k, 12]  # bt待下载数据量
             if download_bit_bt == 0:
                 mask[k, self.action_dim - 2] = 1
             else:
                 mask[k, self.action_dim - 1] = 1  # 有可下载的bt，就不sleep
-            download_bit_et = state_numpy[k, 14:19]  # et待下载数据量
+            download_bit_et = state_numpy[k, 13:18]  # et待下载数据量
             for segment_id in range(5):
                 if download_bit_et[segment_id] == 0:
                     mask[k, segment_id * bit_level_et:(segment_id + 1) * bit_level_et] = 1
