@@ -1,6 +1,7 @@
 ''' 用于测试的程序 '''
 import random
 from abr.myABR import TestAbr
+from abr.RAM360 import RAM360
 from deep_rl.solution import Melody
 import numpy as np
 from utils import get_trace_file
@@ -16,8 +17,9 @@ default_config = {}
 default_config['ewma_half_life'] = [4, 1]  # seconds
 default_config['buffer_size'] = 5  # seconds
 default_config['log_file'] = 'log/session.log'
-default_config['abr'] = TestAbr
+# default_config['abr'] = TestAbr
 # default_config['abr'] = Melody
+default_config['abr'] = RAM360
 
 
 def print_metrics(metrics):

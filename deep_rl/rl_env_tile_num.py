@@ -13,7 +13,7 @@ from utils import get_trace_file, get_tiles_in_viewport, Pose2VideoXY
 from abr.myABR import TestAbr
 from myPrint import print_debug
 
-STATE_DIMENSION = 31
+STATE_DIMENSION = 36
 ACTION_DIMENSION = 27
 HISTORY_LENGTH = 1
 MAX_ET_LEN = 5  # s     # todo: 确定最大的ET buffer长度
@@ -258,7 +258,8 @@ class RLEnv:
             self.update_throughput(action)
         self.update_buffer_length(action, is_BT_download, is_ET_download, first_segment, first_segment_offset)
         self.update_viewport_pred(first_segment, first_et_segment)
-        future_size_in_BT, future_size_in_ET,_ = self.update_download_size(first_et_segment, self.contents)
+        future_size_in_BT, future_size_in_ET, tile_num_in_ET = self.update_download_size(first_et_segment,
+                                                                                         self.contents)
         self.update_avg_level(first_segment, first_et_segment, self.contents)
 
         ''' ================== 计算state ================== '''
@@ -282,6 +283,8 @@ class RLEnv:
         assert len(s_future_size) == 1 + MAX_ET_LEN
         s_future_size = np.array(s_future_size) / 1000000.
         self.state[0, 12:18] = torch.Tensor(s_future_size)
+        tile_num_in_ET = np.array(tile_num_in_ET) / 10
+        self.state[0, 18:23] = tile_num_in_ET
 
         # 平均码率等级
         end_et_segment = first_et_segment + MAX_ET_LEN
@@ -292,18 +295,18 @@ class RLEnv:
             else:
                 s_avg_level.append(0)
         assert len(s_avg_level) == MAX_ET_LEN + 1
-        self.state[0, 18:24] = torch.Tensor(s_avg_level)
+        self.state[0, 23:29] = torch.Tensor(s_avg_level)
 
         # 视点运动信息
         std_x, std_y = self.calculate_pose_spead(first_segment, first_segment_offset)
-        self.state[0, 24] = std_x * 100
-        self.state[0, 25] = std_y * 100
+        self.state[0, 29] = std_x * 100
+        self.state[0, 30] = std_y * 100
 
         # 视角预测准确度(5个step更新一次)
         if self.acc_count % MAX_ET_LEN == 0:
             self.acc = self.calculate_pred_acc()
             self.acc_count += 1
-        self.state[0, 26:31] = torch.Tensor(self.acc)
+        self.state[0, 31:36] = torch.Tensor(self.acc)
 
         # print('play_head = ', play_head)
         # print('video_time = ', self.video_time)
@@ -372,6 +375,7 @@ class RLEnv:
         ''' 更新待下载的数据量 '''
         # ======> Part 1: segment in BT buffer - 最低质量全画幅下载
         size_in_BT = []
+        num_in_BT = [TILES_X * TILES_Y]
         next_BT_segment = self.latest_BT_segment + 1
         download_bit = 0
         if next_BT_segment <= len(self.video_size) - 1:
