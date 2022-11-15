@@ -3,7 +3,7 @@ import time
 import torch
 import random
 from datetime import datetime
-from deep_rl.rl_env import RLEnv
+from deep_rl.rl_env_tile_num import RLEnv
 from deep_rl.ppo import PPO
 from tqdm import tqdm
 
@@ -13,28 +13,28 @@ def train():
     max_training_timesteps = int(3e6)  # break training loop if timeteps > max_training_timesteps
 
     # ============== Save Model ==============
-    env_name = "with acc"
+    env_name = "tile_num_with_acc"
     print("Training environment name : " + env_name)
-    save_model_freq = 50  # save model frequency (in num timesteps)
+    save_model_freq = 25  # save model frequency (in num timesteps)
 
     # =============== Hyper-parameter Setting ===============
     device = torch.device('cpu')
     print("Device set to : ", device)
 
-    # K_epochs = 80  # update policy for K epochs in one PPO update
-    K_epochs = 40  # update policy for K epochs in one PPO update
+    K_epochs = 80  # update policy for K epochs in one PPO update
+    # K_epochs = 40  # update policy for K epochs in one PPO update
 
-    # eps_clip = 0.2  # clip parameter for PPO
-    eps_clip = 0.1  # clip parameter for PPO
+    eps_clip = 0.2  # clip parameter for PPO
+    # eps_clip = 0.1  # clip parameter for PPO
     gamma = 0.95  # discount factor
 
     # 起始300轮
-    # lr_actor = 0.0003  # learning rate for actor network
-    # lr_critic = 0.001  # learning rate for critic network
+    lr_actor = 0.0003  # learning rate for actor network
+    lr_critic = 0.001  # learning rate for critic network
 
     # 300轮后
-    lr_actor = 0.00003  # learning rate for actor network
-    lr_critic = 0.0001  # learning rate for critic network
+    # lr_actor = 0.00003  # learning rate for actor network
+    # lr_critic = 0.0001  # learning rate for critic network
 
     random_seed = 0  # set random seed if required (0 = no random seed)
 
@@ -87,16 +87,16 @@ def train():
     log_f = open(log_f_name, "w+")
     log_f.write('episode,timestep,reward\n')
 
-    time_step = 200
+    time_step = 0
     i_episode = 0
-    ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
+    # ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
 
     # =============== 随机化trace ===============
-    network_batch = 4
+    network_batch = 3
     network_dict_size = 40
     network_list = range(network_dict_size)
 
-    video_batch = 4
+    video_batch = 2
     video_dict_size = 18
     video_list = range(video_dict_size)
 

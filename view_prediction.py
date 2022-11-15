@@ -72,12 +72,12 @@ class TestPrediction(ViewportPrediction):
                 head_x[i] += 1.0
         # 3. 预测
         play_time = np.array(play_time).reshape(len(play_time), 1)
-        # model_x = Ridge()
-        model_x = LinearRegression()
+        model_x = Ridge()
+        # model_x = LinearRegression()
         model_x.fit(play_time, head_x)
 
-        # model_y = Ridge()
-        model_y = LinearRegression()
+        model_y = Ridge()
+        # model_y = LinearRegression()
         model_y.fit(play_time, head_y)
 
         return model_x, model_y
@@ -113,12 +113,12 @@ class TestPrediction(ViewportPrediction):
                 head_x[i] += 1.0
         # 预测
         play_time = np.array(play_time).reshape(len(play_time), 1)
-        # model_x = Ridge()
-        model_x = LinearRegression()
+        model_x = Ridge()
+        # model_x = LinearRegression()
         model_x.fit(play_time, head_x)
 
-        # model_y = Ridge()
-        model_y = LinearRegression()
+        model_y = Ridge()
+        # model_y = LinearRegression()
         model_y.fit(play_time, head_y)
         return model_x, model_y
 

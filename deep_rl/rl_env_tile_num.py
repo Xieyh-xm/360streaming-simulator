@@ -129,7 +129,7 @@ class RLEnv:
         # 待下载的数据量
         first_segment = 0
         self.update_viewport_pred(first_segment, first_segment)
-        future_size_in_BT, future_size_in_ET = self.update_download_size(first_segment, self.contents)
+        future_size_in_BT, future_size_in_ET, tile_num_in_ET = self.update_download_size(first_segment, self.contents)
         s_future_size = future_size_in_BT + future_size_in_ET
         assert len(s_future_size) == 1 + MAX_ET_LEN
         s_future_size = np.array(s_future_size) / 1000000.
@@ -284,7 +284,7 @@ class RLEnv:
         s_future_size = np.array(s_future_size) / 1000000.
         self.state[0, 12:18] = torch.Tensor(s_future_size)
         tile_num_in_ET = np.array(tile_num_in_ET) / 10
-        self.state[0, 18:23] = tile_num_in_ET
+        self.state[0, 18:23] = torch.Tensor(tile_num_in_ET)
 
         # 平均码率等级
         end_et_segment = first_et_segment + MAX_ET_LEN
