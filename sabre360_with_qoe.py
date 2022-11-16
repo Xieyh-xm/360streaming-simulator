@@ -1085,7 +1085,7 @@ class Session:
                 assert self.last_played_segment > cur_played_segment
 
                 ''' QoE计算 '''
-                self.score_one_step = - 6. * stall_time
+                self.score_one_step = - 5. * stall_time
                 self.total_score += self.score_one_step
                 continue
             ''' --------- 下载tile ---------'''
@@ -1154,7 +1154,7 @@ class Session:
             self.bandwidth_wastage += bandwidth_wastage / 8  # B
 
             # 2. 线性组合
-            self.score_one_step = 2 * delta_quality - 6. * stall_time - 0.5 * delta_var_space - 0.5 * delta_var_time - 0.4 * bandwidth_wastage / 8
+            self.score_one_step = 1.0 * delta_quality - 5. * stall_time - 0.1 * delta_var_space - 0.1 * delta_var_time - 0.05 * bandwidth_wastage / 8
             # self.score_one_step = delta_quality / 8 - 5. * stall_time - 0.5 * delta_var_space - 0.5 * delta_var_time - 0.2 * bandwidth_wastage / 8
             self.total_score += self.score_one_step
 
@@ -1165,9 +1165,11 @@ class Session:
                 self.buffer.put_in_buffer(progress.segment, progress.tile, progress.quality)  # 将下载的chunk放入buffer
 
     def calculate_delta_quality(self, pose_list, segment_idx, download_tile):
+        ''' 计算质量增益 '''
         bitrate = self.manifest.bitrates
         buffer_contents = self.buffer.get_buffer_contents(segment_idx)
         sum_delta_quality = 0
+
         # 计算视窗平均面积
         sum_proportion = 0
         for i in range(len(pose_list)):
@@ -1181,24 +1183,26 @@ class Session:
         for i in range(len(pose_list)):
             video_x, video_y = Pose2VideoXY(pose_list[i])
             delta_quality_per_pose = 0
-            for tile_idx in download_tile:
+            for tile_idx in download_tile:  # 遍历下载的tile
                 proportion = calculate_viewing_proportion(video_x, video_y, tile_idx)
                 sum_proportion += proportion
                 if buffer_contents is None or buffer_contents[tile_idx] is None:  # 从未下载过
                     delta_quality_per_pose += proportion * bitrate[download_tile[tile_idx]]
                 else:  # 下载过
                     delta_quality_per_pose += proportion * max(
-                        bitrate[download_tile[tile_idx]] - buffer_contents[tile_idx], 0)
+                        bitrate[download_tile[tile_idx]] - bitrate[buffer_contents[tile_idx]], 0)
             sum_delta_quality += delta_quality_per_pose
 
         delta_quality = sum_delta_quality / (len(pose_list) * avg_proportion)
         self.buffer.add_segment_quality(segment_idx, delta_quality)
+        # print("delta_quality = ", delta_quality)
         return delta_quality
 
     def calculate_delta_var_space(self, pose_list, segment_idx, download_tile):
+        ''' 计算空间平滑增益 '''
         bitrate = self.manifest.bitrates
         buffer_contents_raw = self.buffer.get_buffer_contents(segment_idx)
-
+        # 模拟放入buffer
         if buffer_contents_raw is None:
             buffer_contents = [None for i in range(TILES_X * TILES_Y)]
             for tile_idx in download_tile:
@@ -1210,6 +1214,7 @@ class Session:
                     buffer_contents[tile_idx] = buffer_contents[tile_idx]
                 else:
                     buffer_contents[tile_idx] = max(buffer_contents[tile_idx], download_tile[tile_idx])
+
         # 计算视窗平均面积
         sum_proportion = 0
         for i in range(len(pose_list)):
@@ -1218,9 +1223,11 @@ class Session:
                 proportion = calculate_viewing_proportion(video_x, video_y, tile_idx)
                 sum_proportion += proportion
         avg_proportion = sum_proportion / len(pose_list)
+        # print("avg_proportion = ", avg_proportion)
 
         avg_quality = self.buffer.get_segment_quality(segment_idx)
 
+        # 计算空间平滑
         sum_var_space = 0
         for i in range(len(pose_list)):
             video_x, video_y = Pose2VideoXY(pose_list[i])
@@ -1230,7 +1237,7 @@ class Session:
                 if buffer_contents[tile_idx] is not None:
                     quality = bitrate[buffer_contents[tile_idx]]
                 else:
-                    quality = -1
+                    quality = 0
                 # 空间平滑度，标准差
                 var_space_per_pose += proportion * (quality - avg_quality) ** 2
             sum_var_space += var_space_per_pose / avg_proportion
@@ -1239,9 +1246,11 @@ class Session:
         last_quality_var_space = self.buffer.get_quality_var_space(segment_idx)
         self.buffer.save_quality_var_space(segment_idx, quality_var_space)
         delta_var_space = quality_var_space - last_quality_var_space  # 计算时需要加上上次的，减掉下次的
+        # print("delta_var_space", delta_var_space)
         return delta_var_space
 
     def calculate_delta_var_time(self, segment_idx):
+        ''' 计算时间平滑增益 '''
         if segment_idx == 0:
             delta_var_time = 0
         else:
@@ -1260,6 +1269,7 @@ class Session:
             self.buffer.save_quality_var_time(segment_idx, quality_var_time)
 
             delta_var_time = quality_var_time - last_quality_var_time  # 计算时需要加上上次的，减掉下次的
+        # print("delta_var_time = ", delta_var_time)
         return delta_var_time
 
     def calculate_bandwidth_wastage(self, pose_list, segment_idx, download_tile):
@@ -1277,6 +1287,7 @@ class Session:
                     # 重复下载
                     wastage += size_info[tile_idx][buffer_contents[tile_idx]]
         wastage = wastage / (len(pose_list) * 1024.)
+        # print("wastage = ", 0.05 * wastage / 8)
         return wastage
 
     def get_total_metrics(self):
@@ -1284,8 +1295,8 @@ class Session:
         # [0]score [1]qoe [2]quality [3]stall_time [4]var_space
         # [5]var_time [6]bandwidth_usage [7]bandwidth_wastage
         metrics[0] = self.total_score
-        metrics[1] = self.total_quality - 5. * self.total_stall_time - 0.5 * self.total_var_space - \
-                     0.5 * self.total_stall_time
+        metrics[1] = self.total_quality - 5. * self.total_stall_time - 0.1 * self.total_var_space - \
+                     0.1 * self.total_var_time
         metrics[2] = self.total_quality  # B
         metrics[3] = self.total_stall_time  # ms
         metrics[4] = self.total_var_space

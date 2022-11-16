@@ -586,9 +586,10 @@ class RLEnv:
         print_debug("useful ratio = ", useful_ratio)
 
         # 2. 线性组合
-        self.session.score_one_step = 2 * delta_quality - 6. * stall_time - 1. * delta_var_space - 1. * delta_var_time - 0.4 * bandwidth_wastage / 8
+        self.session.score_one_step = 1 * delta_quality - 5. * stall_time - 1. * delta_var_space - 1. * delta_var_time - 0.4 * bandwidth_wastage / 8
         # 奖励函数
-        reward = 2.0 * delta_quality - 5. * stall_time - 0.5 * delta_var_space - 0.2 * delta_var_time - 0.15 * bandwidth_wastage / 8
+        reward = 2.0 * delta_quality - 10. * stall_time - 0.5 * delta_var_space - 0.3 * delta_var_time - 0.10 * bandwidth_wastage / 8
+        print(reward)
         reward /= 10.
 
         # self.session.qoe_one_step = delta_quality / 8 - 1.85 * stall_time - 0.5 * delta_var_space - 1 * delta_var_time - 0.5 * bandwidth_usage / 8

@@ -75,11 +75,10 @@ class RAM360(TiledAbr):
                 x_pred, y_pred = 0.5, 0.5
             tiles_in_viewport = get_tiles_in_viewport(x_pred, y_pred)  # 视窗内的tile
 
-            utility = 0
             cur_action = None
+            utility = float("-inf")
             if segment_id < max_download_segment_id:
                 '''============= ET:update ============='''
-                # todo:码率选择的循环
                 download_list = {}
                 download_time = 0.0
                 download_bit = 0.0
@@ -87,12 +86,12 @@ class RAM360(TiledAbr):
                 valid_download_time = self.segment_duration * (segment_id - first_segment + 1 - BANDWIDTH_TH) \
                                       - first_segment_offset
                 for tile_id in tiles_in_viewport:  # 遍历视窗内的tile
-                    max_tile_utility = 0
+                    max_tile_utility = float("-inf")
                     best_level = None
                     for bit_level in range(1, len(self.bitrate)):  # 遍历每个码率等级
                         ''' 限制条件 '''
                         # 1. 避免播放卡顿
-                        tile_size = self.video_size[segment_id][tile_id][bit_level]
+                        tile_size = self.video_size[segment_id][tile_id][bit_level]  # bits
                         tmp_download_time = download_time + tile_size / tput  # ms
                         if tmp_download_time > stall_download_time:
                             break
@@ -106,14 +105,18 @@ class RAM360(TiledAbr):
                         ''' 计算效用函数 '''
                         tmp_download_list = download_list.copy()
                         tmp_download_list[tile_id] = bit_level
+
+                        pred_accuracy = acc[min(segment_id - first_segment, len(acc) - 1)]
                         old_quality = self.qoe_estimator.get_total_quality(segment_id, {}, self.pred_view,
-                                                                           acc[segment_id - first_segment])
+                                                                           pred_accuracy)
                         new_quality = self.qoe_estimator.get_total_quality(segment_id, tmp_download_list,
                                                                            self.pred_view,
-                                                                           acc[segment_id - first_segment])
+                                                                           pred_accuracy)
                         quality_improvement = new_quality - old_quality
                         tmp_download_bit = download_bit + tile_size
-                        tile_utility = CONTROL_PARM_V * quality_improvement / tmp_download_bit
+
+                        assert tmp_download_bit > 0
+                        tile_utility = CONTROL_PARM_V * quality_improvement / (tmp_download_bit / 1024.)
                         if tile_utility > max_tile_utility:
                             max_tile_utility = tile_utility
                             best_level = bit_level
@@ -121,15 +124,24 @@ class RAM360(TiledAbr):
                         download_list[tile_id] = best_level
                         download_bit += self.video_size[segment_id][tile_id][best_level]
                         download_time += self.video_size[segment_id][tile_id][best_level] / tput  # ms
-                old_quality = self.qoe_estimator.get_total_quality(segment_id, {}, self.pred_view,
-                                                                   acc[segment_id - first_segment])
-                new_quality = self.qoe_estimator.get_total_quality(segment_id, download_list, self.pred_view,
-                                                                   acc[segment_id - first_segment])
-                quality_improvement = new_quality - old_quality
-                utility = CONTROL_PARM_V + quality_improvement / download_bit
+
                 cur_action = AvailableAction(segment_id, download_list)
+                if len(download_list) != 0:
+                    pred_accuracy = acc[min(segment_id - first_segment, len(acc) - 1)]
+                    old_quality = self.qoe_estimator.get_total_quality(segment_id, {}, self.pred_view,
+                                                                       pred_accuracy)
+                    new_quality = self.qoe_estimator.get_total_quality(segment_id, download_list, self.pred_view,
+                                                                       pred_accuracy)
+                    quality_improvement = new_quality - old_quality
+                    assert download_bit > 0
+                    utility = CONTROL_PARM_V + quality_improvement / (download_bit / 1024.)
+                else:  # 该segment没有tile可以下载
+                    utility = float("-inf")
             elif segment_id == max_download_segment_id:
                 '''============= BT:prefetch ============='''
+                # 不重复下载
+                if self.buffer.get_buffer_contents(segment_id) is not None:
+                    continue
                 download_bit = 0.0  # b_{k}
                 download_tile = {}
                 for i in range(TILES_X * TILES_Y):  # 全画幅下载
@@ -142,22 +154,25 @@ class RAM360(TiledAbr):
                 old_quality = self.qoe_estimator.get_total_quality(segment_id, {}, self.pred_view, 1)
                 new_quality = self.qoe_estimator.get_total_quality(segment_id, download_tile, self.pred_view, 1)
                 quality_improvement = new_quality - old_quality
+                assert download_bit > 0
+                utility = (CONTROL_PARM_V * quality_improvement - buffer_length * self.segment_duration) / (
+                        download_bit / 1024.)
 
-                utility = (CONTROL_PARM_V * quality_improvement - buffer_length * self.segment_duration) / download_bit
-
-            print(utility)
+            # print(utility)
             if utility > max_utility:
                 max_utility = utility
                 optimal_action = cur_action
 
         # 将 AvailableAction 转换为 TiledAction
+        if optimal_action is None:
+            return [TiledAction(0, 0, 0, 150)]
         optimal_segment = optimal_action.segment
         optimal_download_tile = optimal_action.download_tile_dict
         action = []
         for tile_id in optimal_download_tile:
             action.append(TiledAction(optimal_segment, tile_id, optimal_download_tile[tile_id], 0))
         self.last_action = action
-        print(action)
+        # print(action)
         return action
 
     def calculate_pred_acc(self):
@@ -201,7 +216,7 @@ class QoeEstimator:
         self.bitrate = bitrate
 
     def get_oscillation_space(self, avg_quality, quality_list_non, video_xy):
-        ''' 计算segment空间平滑度(非差值) '''
+        ''' 计算segment空间平滑度(非差值 & 面积平均) '''
         sum_delta = 0
         total_proportion = 0
         (video_x, video_y) = video_xy
@@ -268,4 +283,8 @@ class QoeEstimator:
         # 3. 计算空间平滑度
         oscillation_space = self.get_oscillation_space(avg_quality, quality_list_non, video_xy)
 
+        # print("avg_quality = {:.2f}\toscillation_time = {:.2f}\toscillation_space = {:.2f})".format(avg_quality,
+        #                                                                                             oscillation_time,
+        #                                                                                             oscillation_space))
+        # print("quality = {:.2f}\n".format(avg_quality - LAMDA * (oscillation_time + oscillation_space)))
         return avg_quality - LAMDA * (oscillation_time + oscillation_space)
