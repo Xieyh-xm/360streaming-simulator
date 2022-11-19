@@ -258,7 +258,7 @@ class RLEnv:
             self.update_throughput(action)
         self.update_buffer_length(action, is_BT_download, is_ET_download, first_segment, first_segment_offset)
         self.update_viewport_pred(first_segment, first_et_segment)
-        future_size_in_BT, future_size_in_ET,_ = self.update_download_size(first_et_segment, self.contents)
+        future_size_in_BT, future_size_in_ET= self.update_download_size(first_et_segment, self.contents)
         self.update_avg_level(first_segment, first_et_segment, self.contents)
 
         ''' ================== 计算state ================== '''
@@ -311,7 +311,6 @@ class RLEnv:
         # print('base_buffer_depth = ', self.base_buffer_depth)
         print_debug('qoe_one_step = ', self.session.score_one_step)
         print_debug('\n')
-
         # print(acc)
         return self.state, reward, done
 
@@ -383,14 +382,12 @@ class RLEnv:
 
         # ======> Part 2: segments in ET buffer - 待更新码率
         size_in_ET = []
-        num_in_ET = []
         for i in range(MAX_ET_LEN):  # 遍历et buffer中的segment
             download_bit = 0
             segment_idx = first_et_segment + i
             pred_tiles = self.pred_tiles_dict[segment_idx]
             if segment_idx >= len(self.video_size) - 1:  # 超过segment idx
                 size_in_ET.append(download_bit)
-                num_in_ET.append(0)
                 continue
 
             if segment_idx <= self.latest_ET_segment:
@@ -401,15 +398,13 @@ class RLEnv:
                     if downloaded_tile_info[tile] == 0:
                         download_bit += self.video_size[segment_idx][tile][len(self.bitrate_level) - 1]
                         cnt += 1
-                num_in_ET.append(cnt)
             else:
                 # 新下载ET segment的情况
-                num_in_ET.append(len(pred_tiles))
                 for tile in pred_tiles:  # 下载全部预测视窗内的tile
                     download_bit += self.video_size[segment_idx][tile][len(self.bitrate_level) - 1]
             size_in_ET.append(download_bit)
         assert len(size_in_ET) == MAX_ET_LEN
-        return size_in_BT, size_in_ET, num_in_ET  # bits
+        return size_in_BT, size_in_ET  # bits
 
     def update_avg_level(self, first_segment, first_et_segment, contents):
         ''' 更新ET(以及ET前一个)中视窗内所有tile的平均码率等级 '''
@@ -519,7 +514,6 @@ class RLEnv:
 
             self.session.score_one_step = - 5. * stall_time
             reward = - 5. * stall_time
-            reward /= 10.
             self.session.total_score += self.session.score_one_step
             return reward
 
@@ -588,9 +582,7 @@ class RLEnv:
         # 2. 线性组合
         self.session.score_one_step = 1 * delta_quality - 5. * stall_time - 1. * delta_var_space - 1. * delta_var_time - 0.4 * bandwidth_wastage / 8
         # 奖励函数
-        reward = 2.0 * delta_quality - 10. * stall_time - 0.5 * delta_var_space - 0.3 * delta_var_time - 0.10 * bandwidth_wastage / 8
-        print(reward)
-        reward /= 10.
+        reward = 1.0 * delta_quality - 5. * stall_time - 0.1 * delta_var_space - 0.1 * delta_var_time - 0.2 * bandwidth_wastage / 10.
 
         # self.session.qoe_one_step = delta_quality / 8 - 1.85 * stall_time - 0.5 * delta_var_space - 1 * delta_var_time - 0.5 * bandwidth_usage / 8
         self.session.total_score += self.session.score_one_step

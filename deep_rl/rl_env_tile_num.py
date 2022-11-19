@@ -312,10 +312,17 @@ class RLEnv:
         # print('video_time = ', self.video_time)
         # print('download time = ', self.session.total_download_time)
         # print('base_buffer_depth = ', self.base_buffer_depth)
+        # print('buffer_depth = ', self.session.buffer.get_buffer_depth())
+        print_debug(action)
+        print_debug('s_avg_level', s_avg_level)
+        print_debug('future_size_in_ET = ', future_size_in_ET)
         print_debug('qoe_one_step = ', self.session.score_one_step)
+        print_debug('acc = ', self.acc)
+        print_debug('tile_num_in_ET = ', tile_num_in_ET)
         print_debug('\n')
 
-        # print(acc)
+        print(self.state)
+        print(reward)
         return self.state, reward, done
 
     def update_throughput(self, action):
@@ -523,7 +530,7 @@ class RLEnv:
 
             self.session.score_one_step = - 5. * stall_time
             reward = - 5. * stall_time
-            reward /= 10.
+            # reward /= 10.
             self.session.total_score += self.session.score_one_step
             return reward
 
@@ -592,10 +599,10 @@ class RLEnv:
         # 2. 线性组合
         self.session.score_one_step = 1.0 * delta_quality - 5. * stall_time - 0.5 * delta_var_space - 0.2 * delta_var_time - 0.05 * bandwidth_wastage / 8
         # 奖励函数
-        reward = 1.0 * delta_quality - 5. * stall_time - 0.5 * delta_var_space - 0.2 * delta_var_time - 0.05 * bandwidth_wastage / 8
+        reward = 1.0 * delta_quality - 5. * stall_time - 0.1 * delta_var_space - 0.1 * delta_var_time - 0.2 * bandwidth_wastage / 10.
         # reward /= 10.
-        print(action)
-        print(reward, '\n')
+        # print(action)
+        # print(reward, '\n')
 
         # self.session.qoe_one_step = delta_quality / 8 - 1.85 * stall_time - 0.5 * delta_var_space - 1 * delta_var_time - 0.5 * bandwidth_usage / 8
         self.session.total_score += self.session.score_one_step

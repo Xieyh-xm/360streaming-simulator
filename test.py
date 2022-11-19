@@ -32,7 +32,8 @@ def print_metrics(metrics):
     print('Quality: {:.2f}\tStall time: {:.2f}\t'.format(metrics[2], metrics[3]))
     print('Oscillation in space: {:.2f}\tOscillation in time: {:.2f}'.format(metrics[4], metrics[5]))
     wastage_ratio = metrics[7] / metrics[6]
-    print('Wastage ratio:{:.2f}'.format(wastage_ratio))
+    print('Bandwidth wastage: {:.2f}'.format(metrics[7]))
+    print('Wastage ratio: {:.2f}\n'.format(wastage_ratio))
 
 
 def test(net_id, video_id, user_id):
@@ -79,5 +80,4 @@ def test_network_samples(network_batch=NETWORK_TRACE_NUM, video_batch=VIDEO_TRAC
 
 
 if __name__ == '__main__':
-    # test_network_samples(network_batch=10, video_batch=5, user_batch=5)
-    test(0, 0, 0)
+    test_network_samples(network_batch=2, video_batch=2, user_batch=2)

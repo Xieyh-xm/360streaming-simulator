@@ -1,0 +1,113 @@
+import json
+import os
+
+''' 用于放缩网络trace & 生成网络trace '''
+
+DEFAULT_LATENCY = 20.
+
+
+class NetworkTrace:
+    def __init__(self, filename):
+        self.filename = filename
+        self.file_path = RAW_PATH + filename
+        self.play_duration = []  # ms
+        self.bandwidth = []  # kbps
+        self.latency = []  # ms
+
+    def read_trace(self):
+        with open(self.file_path) as file:
+            trace = json.load(file)
+            for trace_info in trace:
+                self.play_duration.append(trace_info['duration_ms'])
+                self.bandwidth.append(trace_info['bandwidth_kbps'])
+                self.latency.append(trace_info['latency_ms'])
+
+    def get_bw_avg(self):
+        return sum(self.bandwidth) / len(self.bandwidth)  # kbps
+
+    def scale_bw_avg(self, target_avg):
+        ''' 缩放trace '''
+        cur_avg = self.get_bw_avg()
+        ratio = target_avg / cur_avg
+        for i in range(len(self.bandwidth)):
+            self.bandwidth[i] *= ratio
+
+    def save_trace(self, new_info):
+        new_filename = self.filename[:-5] + '_' + new_info + '.json'
+        print(new_filename)
+        new_path = NEW_PATH + new_filename
+        print("saving to {}".format(new_path))
+        with open(new_path, 'w') as output_file:
+            # todo:写入json文件
+            data = []
+            temp_dict = {}
+            for i in range(len(self.play_duration)):
+                temp_dict["duration_ms"] = self.play_duration[i]
+                temp_dict["bandwidth_kbps"] = self.bandwidth[i]
+                temp_dict["latency_ms"] = self.latency[i]
+                data.append(temp_dict.copy())
+            json.dump(data, output_file)
+
+
+def to_json(path):
+    time_duration = []  # ms
+    bitrate = []  # kbps
+    latency = []  # ms
+    last_playtime = -0.5
+    # ========== 读取trace ==========
+    with open(path, 'r') as trace_file:
+        iter_f = iter(trace_file)
+        for line in iter_f:
+            idx = 0
+            while line[idx] != ' ':
+                idx += 1
+            idx += 1
+            # 1. record time duration
+            playtime = float(line[:idx - 1]) * 1000.
+            time_duration.append(playtime - last_playtime)
+            last_playtime = playtime
+            # 2. record bitrate
+            if line[-1] == '\n':
+                bitrate.append(float(line[idx:-1]) * 1024.)  # kbps
+            else:
+                bitrate.append(float(line[idx:]) * 1024.)
+            # 3. record latency
+            latency.append(DEFAULT_LATENCY)
+    # ========== 输出至json文件 ==========
+    data = []
+    for i in range(len(time_duration)):
+        tmp_dict = {}
+        tmp_dict["duration_ms"] = time_duration[i]
+        tmp_dict["bandwidth_kbps"] = bitrate[i]
+        tmp_dict["latency_ms"] = latency[i]
+        data.append(tmp_dict.copy())
+
+    output_path = path + '-high.json'
+    with open(output_path, 'w') as output_file:
+        json.dump(data, output_file)
+
+
+def main():
+    file_list = os.listdir(RAW_PATH)
+    file_list.sort()
+    for filename in file_list:
+        if filename == ".DS_Store":
+            continue
+        trace = NetworkTrace(filename)
+        trace.read_trace()
+        trace.scale_bw_avg(12500)
+        trace.save_trace(new_info="12500kbps")
+
+    # file_list = os.listdir("../network/high/")
+    # file_list.sort()
+    # for filename in file_list:
+    #     if filename == ".DS_Store":
+    #         continue
+    #     file_path = "../network/high/" + filename
+    #     to_json(file_path)
+
+
+RAW_PATH = "../network/generate/"
+NEW_PATH = "../network/scaling/"
+if __name__ == '__main__':
+    main()

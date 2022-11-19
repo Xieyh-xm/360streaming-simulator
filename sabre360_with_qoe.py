@@ -882,7 +882,6 @@ class Ewma(ThroughputEstimator):
         self.weight_latency = 0
 
     def push(self, progress):
-
         if progress.time <= progress.time_to_first_bit:
             return
 
@@ -1146,15 +1145,15 @@ class Session:
                 delta_var_time = 0
                 bandwidth_wastage = bandwidth_usage
 
-            self.total_quality += delta_quality / 8  # B
+            self.total_quality += delta_quality  # kbps
             self.total_stall_time += stall_time  # ms
             self.total_var_space += delta_var_space
             self.total_var_time += delta_var_time
-            self.bandwidth_usage += bandwidth_usage / 8  # B
-            self.bandwidth_wastage += bandwidth_wastage / 8  # B
+            self.bandwidth_usage += bandwidth_usage  # kbps
+            self.bandwidth_wastage += bandwidth_wastage  # kbps
 
             # 2. 线性组合
-            self.score_one_step = 1.0 * delta_quality - 5. * stall_time - 0.1 * delta_var_space - 0.1 * delta_var_time - 0.05 * bandwidth_wastage / 8
+            self.score_one_step = 1.0 * delta_quality - 5. * stall_time - 0.1 * delta_var_space - 0.1 * delta_var_time - 0.2 * bandwidth_wastage / 10
             # self.score_one_step = delta_quality / 8 - 5. * stall_time - 0.5 * delta_var_space - 0.5 * delta_var_time - 0.2 * bandwidth_wastage / 8
             self.total_score += self.score_one_step
 
