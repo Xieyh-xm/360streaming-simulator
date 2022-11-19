@@ -7,6 +7,8 @@ DEFAULT_LATENCY = 20.
 
 
 class NetworkTrace:
+    ''' used for json file '''
+
     def __init__(self, filename):
         self.filename = filename
         self.file_path = RAW_PATH + filename
@@ -50,6 +52,7 @@ class NetworkTrace:
 
 
 def to_json(path):
+    ''' MM Challenge trace to json file '''
     time_duration = []  # ms
     bitrate = []  # kbps
     latency = []  # ms
@@ -87,7 +90,17 @@ def to_json(path):
         json.dump(data, output_file)
 
 
-def main():
+def MMtrace2json():
+    file_list = os.listdir("../network/high/")
+    file_list.sort()
+    for filename in file_list:
+        if filename == ".DS_Store":
+            continue
+        file_path = "../network/high/" + filename
+        to_json(file_path)
+
+
+def resize_json_trace(target_bw):
     file_list = os.listdir(RAW_PATH)
     file_list.sort()
     for filename in file_list:
@@ -95,19 +108,15 @@ def main():
             continue
         trace = NetworkTrace(filename)
         trace.read_trace()
-        trace.scale_bw_avg(12500)
-        trace.save_trace(new_info="12500kbps")
-
-    # file_list = os.listdir("../network/high/")
-    # file_list.sort()
-    # for filename in file_list:
-    #     if filename == ".DS_Store":
-    #         continue
-    #     file_path = "../network/high/" + filename
-    #     to_json(file_path)
+        trace.scale_bw_avg(target_bw)
+        trace.save_trace(new_info=str(target_bw) + "kbps")
 
 
-RAW_PATH = "../network/generate/"
-NEW_PATH = "../network/scaling/"
+def main():
+    resize_json_trace(target_bw=15000)  # kbps
+
+
+RAW_PATH = "../network/high/"
+NEW_PATH = "../network/temp/"
 if __name__ == '__main__':
     main()
