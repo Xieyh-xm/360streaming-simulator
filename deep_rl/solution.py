@@ -7,6 +7,7 @@ sys.path.append("..")
 from deep_rl.ppo import PPO
 from sabre360_with_qoe import SessionInfo, SessionEvents
 from utils import get_tiles_in_viewport, Pose2VideoXY
+from abr.TiledAbr import TiledAbr
 
 ''' 360-degree video设置 '''
 TILES_X = 8
@@ -19,10 +20,10 @@ TPUT_HISTORY_LEN = 10  # 历史吞吐量
 MAX_ET_LEN = 5  # 最大的ET buffer长度 s
 
 ''' PPO设置 '''
-STATE_DIMENSION = 26
+STATE_DIMENSION = 36
 HISTORY_LENGTH = 1
 ACTION_DIMENSION = 27
-NN_MODEL = "deep_rl/model/PPO_two-tier-wastage_0_200.pth"
+NN_MODEL = "deep_rl/model/PPO_et_update_0_500.pth"
 lr_actor = 0.0003  # learning rate for actor network
 lr_critic = 0.001  # learning rate for critic network
 K_epochs = 80  # update policy for K epochs in one PPO update
@@ -41,32 +42,9 @@ def str_tiled_action(self):
 TiledAction.__str__ = str_tiled_action
 
 
-class TiledAbr:
-
-    # TODO: rewrite report_*() to use SessionEvents
-
-    def __init__(self):
-        pass
-
-    def get_action(self):
-        raise NotImplementedError
-
-    def check_abandon(self, progress):
-        return None
-
-    def report_action_complete(self, progress):
-        pass
-
-    def report_action_cancelled(self, progress):
-        pass
-
-    def report_seek(self, where):
-        raise NotImplementedError
-
-
 class Melody(TiledAbr):
     def __init__(self, config, session_info: SessionInfo, session_events: SessionEvents):
-        print("<< proposed rl-based abr >>")
+        # print("<< proposed rl-based abr >>")
         self.session_info = session_info
         self.session_events = session_events
         self.manifest = self.session_info.get_manifest()
@@ -95,6 +73,9 @@ class Melody(TiledAbr):
         self.pred_tiles_dict = {}
         self.contents = {}
 
+        self.acc = np.zeros(MAX_ET_LEN)
+        self.acc_count = 0
+
     def initialize(self):
         ''' 初始化状态，返回state'''
         # 吞吐量
@@ -108,11 +89,13 @@ class Melody(TiledAbr):
         # 待下载的数据量
         first_segment = 0
         self.update_viewport_pred(first_segment, first_segment)
-        future_size_in_BT, future_size_in_ET = self.update_download_size(first_segment, self.contents)
+        future_size_in_BT, future_size_in_ET, tile_num_in_ET = self.update_download_size(first_segment)
         s_future_size = future_size_in_BT + future_size_in_ET
         assert len(s_future_size) == 1 + MAX_ET_LEN
         s_future_size = np.array(s_future_size) / 1000000.
         self.state[0, 12:18] = torch.Tensor(s_future_size)
+        tile_num_in_ET = np.array(tile_num_in_ET) / 10.
+        self.state[0, 18:23] = torch.Tensor(tile_num_in_ET)
 
         # 平均码率等级
         start_et_segment = 0
@@ -128,6 +111,10 @@ class Melody(TiledAbr):
         self.state[0, 24] = std_x * 100
         self.state[0, 25] = std_y * 100
 
+        # 视角预测准确度
+        self.acc = self.calculate_pred_acc()
+        self.state[0, 26:31] = torch.Tensor(self.acc)
+
     def get_action(self):
         ''' 决策 '''
         if self.first_step:
@@ -137,13 +124,13 @@ class Melody(TiledAbr):
         else:
             self.calculate_state()  # 更新state
             ppo_output = self.ppo_agent.select_action(self.state)
-            print(ppo_output)
+            # print(ppo_output)
         action = self.transform_action(ppo_output)
         self.last_action = action
         # print('')
-        print('bt buffer length= {}'.format(self.base_buffer_depth))
-        print('et buffer length= {}'.format(self.enhance_buffer_depth))
-        print(action, '\n')
+        # print('bt buffer length= {}'.format(self.base_buffer_depth))
+        # print('et buffer length= {}'.format(self.enhance_buffer_depth))
+        # print(action, '\n')
         return action
 
     def calculate_state(self):
@@ -162,10 +149,9 @@ class Melody(TiledAbr):
 
         if not self.is_sleep:
             self.update_throughput(self.last_action)
-        self.update_buffer_length(self.last_action, self.is_BT_download, self.is_ET_download, first_segment,
-                                  first_segment_offset)
+        self.update_buffer_length(self.last_action, self.is_BT_download, first_et_segment)
         self.update_viewport_pred(first_segment, first_et_segment)
-        future_size_in_BT, future_size_in_ET = self.update_download_size(first_et_segment, self.contents)
+        future_size_in_BT, future_size_in_ET, tile_num_in_ET = self.update_download_size(first_et_segment)
         self.update_avg_level(first_segment, first_et_segment, self.contents)
 
         # ================== state计算 ==================
@@ -181,14 +167,13 @@ class Melody(TiledAbr):
         self.state[0, 10] = self.base_buffer_depth
         self.state[0, 11] = self.enhance_buffer_depth
 
-        # 当前播放时间
-        # self.state[0, 12] = playhead / 1000.  # s
-
         # 待下载的数据量
         s_future_size = future_size_in_BT + future_size_in_ET
         assert len(s_future_size) == 1 + MAX_ET_LEN
         s_future_size = np.array(s_future_size) / 1000000.
         self.state[0, 12:18] = torch.Tensor(s_future_size)
+        tile_num_in_ET = np.array(tile_num_in_ET) / 10
+        self.state[0, 18:23] = torch.Tensor(tile_num_in_ET)
 
         # 平均码率等级
         end_et_segment = first_et_segment + MAX_ET_LEN
@@ -205,6 +190,12 @@ class Melody(TiledAbr):
         std_x, std_y = self.calculate_pose_spead(first_segment, first_segment_offset)
         self.state[0, 24] = std_x * 100
         self.state[0, 25] = std_y * 100
+
+        # 视角预测准确度(5个step更新一次)
+        if self.acc_count % MAX_ET_LEN == 0:
+            self.acc = self.calculate_pred_acc()
+            self.acc_count += 1
+        self.state[0, 31:36] = torch.Tensor(self.acc)
 
     def transform_action(self, ppo_output):
         action = []
@@ -265,19 +256,31 @@ class Melody(TiledAbr):
             self.past_k_tput.pop(0)
         self.past_k_tput.append(tput)
 
-    def update_buffer_length(self, action, is_BT_download, is_ET_download, first_segment, first_segment_offset):
+    def update_buffer_length(self, action, is_BT_download, first_et_segment):
         ''' 更新ET和BT buffer的长度 '''
         is_BT_download_re = False  # todo：可以删掉
+        ''' 更新ET和BT buffer的长度 '''
+        # 1. 更新bt长度
         if action[0].segment > self.latest_BT_segment:
             is_BT_download_re = True
         assert is_BT_download_re == is_BT_download
-
         self.latest_BT_segment = max(action[0].segment, self.latest_BT_segment)
-        self.base_buffer_depth = self.session_info.buffer.get_buffer_depth() - first_segment_offset / 1000.  # 基础层长度即缓冲区实际长度
-        if is_ET_download:  # ET download
-            self.latest_ET_segment = max(self.latest_ET_segment, action[0].segment)  # 增强层长度需要根据实际的更新决策定义
-        self.enhance_buffer_depth = max(self.latest_ET_segment - first_segment + 1 - first_segment_offset / 1000., 0)
-        assert 0 <= self.enhance_buffer_depth <= MAX_ET_LEN + 1
+        buffer_depth = self.buffer.get_buffer_depth()
+        offset = self.buffer.get_played_segment_partial() / 1000.
+        self.base_buffer_depth = buffer_depth - offset  # 基础层长度即缓冲区实际长度
+
+        # 2. 更新et更新过的视频个数
+        self.enhance_buffer_depth = 0
+        for i in range(MAX_ET_LEN):
+            segment_id = first_et_segment + i
+            contents = self.buffer.get_buffer_contents(segment_id)
+            if contents is None:
+                continue
+            for tile_level in contents:
+                if tile_level is not None and tile_level > 0:
+                    self.enhance_buffer_depth += 1
+                    break
+        assert self.enhance_buffer_depth <= MAX_ET_LEN
 
     def update_viewport_pred(self, first_segment, first_et_segment):
         ''' 更新视角预测结果 (对buffer内所有tile) '''
@@ -302,7 +305,7 @@ class Melody(TiledAbr):
             tiles_in_viewport = get_tiles_in_viewport(x_pred, y_pred)
             self.pred_tiles_dict[seg_idx] = tiles_in_viewport
 
-    def update_download_size(self, first_et_segment, contents):
+    def update_download_size(self, first_et_segment):
         ''' 更新待下载的数据量 '''
         # ======> Part 1: segment in BT buffer - 最低质量全画幅下载
         size_in_BT = []
@@ -316,28 +319,32 @@ class Melody(TiledAbr):
         size_in_BT.append(download_bit)
 
         # ======> Part 2: segments in ET buffer - 待更新码率
-        size_in_ET = []
+        size_in_ET, num_in_ET = [], []
         for i in range(MAX_ET_LEN):  # 遍历et buffer中的segment
             download_bit = 0
             segment_idx = first_et_segment + i
             pred_tiles = self.pred_tiles_dict[segment_idx]
             if segment_idx >= len(self.video_size) - 1:  # 超过segment idx
                 size_in_ET.append(download_bit)
+                num_in_ET.append(0)
                 continue
 
-            if segment_idx <= self.latest_ET_segment:
-                # 更新ET segment的情况
-                downloaded_tile_info = contents[segment_idx]  # 已下载的tile信息
-                for tile in pred_tiles:  # 下载未被下载过的tile
-                    if downloaded_tile_info[tile] == 0:
-                        download_bit += self.video_size[segment_idx][tile][len(self.bitrate_level) - 1]
-            else:
-                # 新下载ET segment的情况
-                for tile in pred_tiles:  # 下载全部预测视窗内的tile
-                    download_bit += self.video_size[segment_idx][tile][len(self.bitrate_level) - 1]
+            content = self.buffer.get_buffer_contents(segment_idx)
+            if content is None:  # bt层没下载过
+                size_in_ET.append(0)
+                num_in_ET.append(0)
+                continue
+
+            cnt = 0
+            for tile_id in pred_tiles:
+                assert content[tile_id] is not None
+                if content[tile_id] == 0:
+                    cnt += 1
+                    download_bit += self.video_size[segment_idx][tile_id][-1]
             size_in_ET.append(download_bit)
-        assert len(size_in_ET) == MAX_ET_LEN
-        return size_in_BT, size_in_ET  # bits
+            num_in_ET.append(cnt)
+
+        return size_in_BT, size_in_ET, num_in_ET  # bits
 
     def update_avg_level(self, first_segment, first_et_segment, contents):
         ''' 更新ET(以及ET前一个)中视窗内所有tile的平均码率等级 '''
@@ -391,3 +398,22 @@ class Melody(TiledAbr):
         std_x = np.std(trace_x)
         std_y = np.std(trace_y)
         return std_x, std_y
+
+    def calculate_pred_acc(self):
+        acc = [0.75, 0.68, 0.62, 0.60, 0.57]
+        pose_trace = self.session_info.get_prev_pose_trace()
+        if len(pose_trace) == 0:
+            return acc
+        latest_segment = list(pose_trace.keys())[-1]
+        latest_pose = pose_trace.get(list(pose_trace.keys())[-1])
+        real_pose = Pose2VideoXY(latest_pose)
+        view_predictor = self.session_info.get_viewport_predictor()
+        for i in range(MAX_ET_LEN):
+            pred_len = i + 1
+            model_x, model_y = view_predictor.build_model_to_get_acc(pred_len, latest_segment)
+            if model_x is None:
+                continue
+            pred_pose = view_predictor.predict_view(model_x, model_y, latest_segment)
+            pred_acc = view_predictor.get_pred_acc(pred_pose, real_pose)
+            acc[i] = pred_acc
+        return np.array(acc)

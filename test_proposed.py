@@ -16,9 +16,9 @@ default_config['buffer_size'] = 5  # seconds
 default_config['log_file'] = 'log/session.log'
 
 # ================= 测试算法 =================
-TestABR = "RAM360"
+# TestABR = "RAM360"
 # TestABR = "TTS"
-# TestABR = "Melody"
+TestABR = "Melody"
 if TestABR == "RAM360":
     from abr.RAM360 import RAM360
 

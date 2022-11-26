@@ -281,7 +281,7 @@ class RLEnv:
         assert len(s_future_size) == 1 + MAX_ET_LEN
         s_future_size = np.array(s_future_size) / 1000000.
         self.state[0, 12:18] = torch.Tensor(s_future_size)
-        tile_num_in_ET = np.array(tile_num_in_ET) / 10
+        tile_num_in_ET = np.array(tile_num_in_ET) / 10.
         self.state[0, 18:23] = torch.Tensor(tile_num_in_ET)
 
         # 平均码率等级

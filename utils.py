@@ -3,8 +3,8 @@ import os
 import json
 import math
 
-# Network_Root_Path = "./network/4Glogs"
-Network_Root_Path = "./network/scaling"
+Network_Root_Path = "./network/4Glogs"
+# Network_Root_Path = "./network/generate"
 Video_Root_Path = "./video/manifest"
 User_Root_Path = "./video/pose_trace"
 
