@@ -267,7 +267,7 @@ class ThreeSixtyAbr(TiledAbr):
             if self.buffer_low < min_buffer_low:
                 self.buffer_low = min(min_buffer_low, self.buffer_high / 2)
 
-        # Note: we can use bitrates instead of bits to calculate Vp and gp: scaling the size does not affect them
+        # Note: we can use bitrates instead of bits to calculate Vp and gp: 4g-scaling the size does not affect them
         self.bitrates = manifest.bitrates
         self.utilities = [math.log(bitrate / self.bitrates[0]) for bitrate in self.bitrates]
         self.average_bits = [bitrate * manifest.segment_duration / manifest.tiles for bitrate in self.bitrates]

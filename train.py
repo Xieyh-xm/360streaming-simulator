@@ -89,7 +89,7 @@ def train():
 
     # todo: set up time_step
     # time_step = 375
-    time_step = 450
+    time_step = 525
     i_episode = 0
     ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
 

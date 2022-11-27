@@ -51,7 +51,7 @@ class NetworkTrace:
             json.dump(data, output_file)
 
 
-def to_json(path):
+def MM_to_json(path):
     ''' MM Challenge trace to json file '''
     time_duration = []  # ms
     bitrate = []  # kbps
@@ -85,19 +85,55 @@ def to_json(path):
         tmp_dict["latency_ms"] = latency[i]
         data.append(tmp_dict.copy())
 
-    output_path = path + '-high.json'
+    output_path = path + '.json'
     with open(output_path, 'w') as output_file:
         json.dump(data, output_file)
 
 
-def MMtrace2json():
-    file_list = os.listdir("../network/high/")
+def Genet_to_json(path):
+    ''' MM Challenge trace to json file '''
+    time_duration = []  # ms
+    bitrate = []  # kbps
+    latency = []  # ms
+    last_playtime = -0.5
+    # ========== 读取trace ==========
+    with open(path, 'r') as trace_file:
+        iter_f = iter(trace_file)
+        for line in iter_f:
+            data = line.split()
+            # 1. record time duration
+            playtime = float(float(data[0]) * 1000.)
+            time_duration.append(playtime - last_playtime)
+            last_playtime = playtime
+            # 2. record bitrate
+            bitrate.append(float(data[1]) * 1024.)  # kbps
+            # 3. record latency
+            latency.append(DEFAULT_LATENCY)
+    # ========== 输出至json文件 ==========
+    data = []
+    for i in range(len(time_duration)):
+        tmp_dict = {}
+        tmp_dict["duration_ms"] = time_duration[i]
+        tmp_dict["bandwidth_kbps"] = bitrate[i]
+        tmp_dict["latency_ms"] = latency[i]
+        data.append(tmp_dict.copy())
+
+    output_path = path + '.json'
+    with open(output_path, 'w') as output_file:
+        json.dump(data, output_file)
+
+
+def trace2json(orgin):
+    file_list = os.listdir(RAW_PATH)
     file_list.sort()
     for filename in file_list:
         if filename == ".DS_Store":
             continue
-        file_path = "../network/high/" + filename
-        to_json(file_path)
+        file_path = RAW_PATH + filename
+        if orgin == "MM":
+            MM_to_json(file_path)
+        elif orgin == "Genet":
+            Genet_to_json(file_path)
 
 
 def resize_json_trace(target_bw):
@@ -113,10 +149,11 @@ def resize_json_trace(target_bw):
 
 
 def main():
-    resize_json_trace(target_bw=15000)  # kbps
+    resize_json_trace(target_bw=12500)  # kbps
+    # trace2json(orgin="Genet")
 
 
-RAW_PATH = "../network/high/"
-NEW_PATH = "../network/temp/"
+RAW_PATH = "../network/fcc/"
+NEW_PATH = "../network/fcc-scaling/"
 if __name__ == '__main__':
     main()

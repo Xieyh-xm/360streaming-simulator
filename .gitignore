@@ -6,4 +6,5 @@ plot/
 log/
 deep_rl/ppo_logs/
 deep_rl/PPO_preTrained/
+network/raw_trace/
 .DS_Store
