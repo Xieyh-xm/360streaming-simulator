@@ -1,0 +1,1492 @@
+[
+  {
+    "duration_ms": 0.5,
+    "bandwidth_kbps": 9379.215990003688,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1040.0000000000205,
+    "bandwidth_kbps": 8256.44781439007,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1100.999999999999,
+    "bandwidth_kbps": 2938.4297797018894,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1129.000000000019,
+    "bandwidth_kbps": 7206.900641436267,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.9999999999668,
+    "bandwidth_kbps": 16100.045463015449,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1129.00000000002,
+    "bandwidth_kbps": 11836.469999262405,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.9999999999673,
+    "bandwidth_kbps": 8269.77229157596,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0000000000146,
+    "bandwidth_kbps": 8432.84526304918,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999909,
+    "bandwidth_kbps": 6921.523450024106,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1050.000000000011,
+    "bandwidth_kbps": 7104.461030786703,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0000000000382,
+    "bandwidth_kbps": 8418.338948007586,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1129.9999999999964,
+    "bandwidth_kbps": 3989.164795581033,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1029.9999999999727,
+    "bandwidth_kbps": 5703.99460657584,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1951.0000000000218,
+    "bandwidth_kbps": 3004.223138469888,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1008.9999999999582,
+    "bandwidth_kbps": 12144.233579526031,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0000000000364,
+    "bandwidth_kbps": 4873.775180433051,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.9999999999818,
+    "bandwidth_kbps": 3372.0966434763677,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1047.0000000000255,
+    "bandwidth_kbps": 7939.9885481277815,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1190.0,
+    "bandwidth_kbps": 6227.971770191389,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1029.999999999971,
+    "bandwidth_kbps": 11188.604805195338,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.9999999999818,
+    "bandwidth_kbps": 6010.762671838485,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0000000000473,
+    "bandwidth_kbps": 10291.518067744426,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1039.9999999999636,
+    "bandwidth_kbps": 5356.272047014934,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.00000000004,
+    "bandwidth_kbps": 6867.592299689855,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1298.9999999999782,
+    "bandwidth_kbps": 5700.5462470069,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999927,
+    "bandwidth_kbps": 9181.965854810687,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1050.9999999999854,
+    "bandwidth_kbps": 4515.018785776988,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1100.0000000000218,
+    "bandwidth_kbps": 2362.0708659507827,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1029.9999999999745,
+    "bandwidth_kbps": 3074.3665331123707,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.0000000000036,
+    "bandwidth_kbps": 6135.642673606556,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1312.0000000000146,
+    "bandwidth_kbps": 7608.475534188495,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.0000000000073,
+    "bandwidth_kbps": 8426.600320862026,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999854,
+    "bandwidth_kbps": 8586.404805391883,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1240.0000000000146,
+    "bandwidth_kbps": 7619.983067048272,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0000000000146,
+    "bandwidth_kbps": 7838.263534612115,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999854,
+    "bandwidth_kbps": 8485.334404839896,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999927,
+    "bandwidth_kbps": 13854.167915008244,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1031.0000000000073,
+    "bandwidth_kbps": 10190.679262480202,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999927,
+    "bandwidth_kbps": 10962.704028683384,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1030.000000000029,
+    "bandwidth_kbps": 3588.570830844632,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1078.999999999949,
+    "bandwidth_kbps": 3141.324469646529,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0000000000509,
+    "bandwidth_kbps": 2908.4724974159085,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1039.9999999999563,
+    "bandwidth_kbps": 3193.3698783585373,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0000000000437,
+    "bandwidth_kbps": 5095.310415892264,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1269.9999999999782,
+    "bandwidth_kbps": 4406.6583893611005,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1291.0,
+    "bandwidth_kbps": 8140.3820264282285,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.0000000000073,
+    "bandwidth_kbps": 9100.789339413657,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.9999999999782,
+    "bandwidth_kbps": 5455.143232588117,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1007.0000000000073,
+    "bandwidth_kbps": 6731.855218963986,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1055.0000000000073,
+    "bandwidth_kbps": 3189.30060248056,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.0000000000073,
+    "bandwidth_kbps": 6209.073920642784,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.0,
+    "bandwidth_kbps": 4512.374444675795,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1021.9999999999927,
+    "bandwidth_kbps": 5085.339162629534,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1199.0000000000146,
+    "bandwidth_kbps": 3905.7647760346135,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1008.9999999999563,
+    "bandwidth_kbps": 8734.06508140428,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0000000000364,
+    "bandwidth_kbps": 6021.28883435163,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1050.9999999999927,
+    "bandwidth_kbps": 6020.025047688885,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0000000000146,
+    "bandwidth_kbps": 3522.1436914630276,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1072.0,
+    "bandwidth_kbps": 5269.728082631775,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1027.9999999999636,
+    "bandwidth_kbps": 5215.374831100971,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1300.0000000000073,
+    "bandwidth_kbps": 5896.409930347735,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1040.0000000000218,
+    "bandwidth_kbps": 6952.798159475507,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.9999999999854,
+    "bandwidth_kbps": 4124.798233014568,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.9999999999854,
+    "bandwidth_kbps": 5981.451357791059,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0000000000437,
+    "bandwidth_kbps": 2462.3235448236414,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1060.0,
+    "bandwidth_kbps": 3410.8066442717827,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1299.9999999999563,
+    "bandwidth_kbps": 2242.5061168949323,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0000000000437,
+    "bandwidth_kbps": 6202.986593270921,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999854,
+    "bandwidth_kbps": 4922.030380232777,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999854,
+    "bandwidth_kbps": 3487.910085027531,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1190.0,
+    "bandwidth_kbps": 5594.73634147548,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1230.0000000000146,
+    "bandwidth_kbps": 9046.88316711162,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1031.0000000000146,
+    "bandwidth_kbps": 10028.863958275035,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1709.0,
+    "bandwidth_kbps": 2776.6440865120753,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999854,
+    "bandwidth_kbps": 14957.765104185579,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 6531.143116505873,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1069.9999999999854,
+    "bandwidth_kbps": 7284.119587601892,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1399.9999999999854,
+    "bandwidth_kbps": 3547.1178078834278,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1280.000000000029,
+    "bandwidth_kbps": 3658.215958696066,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1031.0,
+    "bandwidth_kbps": 3945.0891593495976,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0000000000146,
+    "bandwidth_kbps": 13390.694284459978,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1018.9999999999563,
+    "bandwidth_kbps": 11803.302984832115,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.0000000000291,
+    "bandwidth_kbps": 9255.348199319778,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1029.0,
+    "bandwidth_kbps": 5908.267262818885,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1221.0,
+    "bandwidth_kbps": 7459.33491850816,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1070.0,
+    "bandwidth_kbps": 3378.929946668906,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 2329.999999999971,
+    "bandwidth_kbps": 2131.3154210542552,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1059.000000000029,
+    "bandwidth_kbps": 2495.946036759591,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.9999999999709,
+    "bandwidth_kbps": 6705.220776957388,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0000000000437,
+    "bandwidth_kbps": 4168.522292630549,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.0,
+    "bandwidth_kbps": 5322.063360550958,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.9999999999563,
+    "bandwidth_kbps": 5311.638162981297,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1040.000000000029,
+    "bandwidth_kbps": 3735.127794147698,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999854,
+    "bandwidth_kbps": 7830.502877628039,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.0,
+    "bandwidth_kbps": 5395.81880734706,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.9999999999854,
+    "bandwidth_kbps": 7089.127535169716,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1021.0000000000146,
+    "bandwidth_kbps": 6529.697487077009,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999854,
+    "bandwidth_kbps": 8054.231531288123,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.0000000000146,
+    "bandwidth_kbps": 5705.105384213713,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1251.000000000029,
+    "bandwidth_kbps": 3636.4639040788907,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1008.9999999999563,
+    "bandwidth_kbps": 4255.057347360862,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1012.0,
+    "bandwidth_kbps": 4242.443540985477,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1039.0000000000437,
+    "bandwidth_kbps": 3389.9215272069177,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1038.9999999999854,
+    "bandwidth_kbps": 4567.165297254358,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1139.9999999999854,
+    "bandwidth_kbps": 4123.553844569747,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1082.0,
+    "bandwidth_kbps": 2297.250778207281,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1048.0,
+    "bandwidth_kbps": 3881.094392463631,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1030.000000000029,
+    "bandwidth_kbps": 4011.3027747928295,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1039.999999999971,
+    "bandwidth_kbps": 4128.223907184711,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1040.0000000000146,
+    "bandwidth_kbps": 2172.749424843839,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1070.0,
+    "bandwidth_kbps": 6646.402134682947,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999854,
+    "bandwidth_kbps": 2908.4724974159085,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1055.9999999999854,
+    "bandwidth_kbps": 7234.749264408144,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1230.0000000000146,
+    "bandwidth_kbps": 6558.577346705383,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1130.0,
+    "bandwidth_kbps": 9735.082339914708,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1379.9999999999854,
+    "bandwidth_kbps": 7532.198006108791,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1090.0000000000437,
+    "bandwidth_kbps": 3509.0853257177287,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1029.999999999971,
+    "bandwidth_kbps": 5484.610198619497,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1222.000000000029,
+    "bandwidth_kbps": 3332.3871824434987,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1446.9999999999563,
+    "bandwidth_kbps": 3435.556796152815,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0000000000291,
+    "bandwidth_kbps": 6545.862106874714,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1090.0,
+    "bandwidth_kbps": 2073.082020034678,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1021.0,
+    "bandwidth_kbps": 3762.410365439923,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1048.0,
+    "bandwidth_kbps": 4448.66346763776,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1070.999999999971,
+    "bandwidth_kbps": 7173.521910588649,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1050.0,
+    "bandwidth_kbps": 3012.879202443516,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1060.000000000029,
+    "bandwidth_kbps": 2131.754152675026,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1090.000000000029,
+    "bandwidth_kbps": 2073.082020034678,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1079.999999999971,
+    "bandwidth_kbps": 2092.277223912226,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1029.999999999971,
+    "bandwidth_kbps": 2632.6128953315774,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1290.000000000029,
+    "bandwidth_kbps": 2102.0087458951466,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.9999999999709,
+    "bandwidth_kbps": 2905.595670005921,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0,
+    "bandwidth_kbps": 2463.4542537352363,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1030.000000000029,
+    "bandwidth_kbps": 2193.84407943954,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0,
+    "bandwidth_kbps": 5095.310415892264,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1060.0,
+    "bandwidth_kbps": 4050.332890080485,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1240.0,
+    "bandwidth_kbps": 2125.6240022591537,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 7606.774223988602,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1041.0,
+    "bandwidth_kbps": 3517.9643812805207,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1300.0,
+    "bandwidth_kbps": 9036.477564034754,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0,
+    "bandwidth_kbps": 12108.87299214206,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1191.0,
+    "bandwidth_kbps": 17676.316899316716,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.9999999999709,
+    "bandwidth_kbps": 22386.07076826997,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0000000000582,
+    "bandwidth_kbps": 16544.14517757243,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1118.999999999971,
+    "bandwidth_kbps": 17456.801502803093,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999709,
+    "bandwidth_kbps": 24749.464446350266,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.0000000000291,
+    "bandwidth_kbps": 18842.541093186457,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 18144.91715263583,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 18997.800872494074,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1118.999999999971,
+    "bandwidth_kbps": 20074.071236465326,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1130.0000000000582,
+    "bandwidth_kbps": 21295.766700076845,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999709,
+    "bandwidth_kbps": 25589.291849580335,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 18779.305637642356,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1021.0000000000291,
+    "bandwidth_kbps": 18552.55293546758,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999709,
+    "bandwidth_kbps": 19685.34126718078,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1000.9999999999709,
+    "bandwidth_kbps": 18893.530655911676,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1008.0,
+    "bandwidth_kbps": 16026.37159297958,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1011.0000000000291,
+    "bandwidth_kbps": 20841.734483227243,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999709,
+    "bandwidth_kbps": 21903.65666049548,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0000000000582,
+    "bandwidth_kbps": 22152.71384248171,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1078.9999999999418,
+    "bandwidth_kbps": 22042.851383357138,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1111.0000000000582,
+    "bandwidth_kbps": 22890.557531154085,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1038.999999999971,
+    "bandwidth_kbps": 19893.90940797367,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1050.0,
+    "bandwidth_kbps": 19843.597671071268,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1179.999999999971,
+    "bandwidth_kbps": 23996.422669487034,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.0000000000291,
+    "bandwidth_kbps": 31772.2730886402,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1000.9999999999709,
+    "bandwidth_kbps": 26785.85688739262,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1218.000000000029,
+    "bandwidth_kbps": 20034.49016655833,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999709,
+    "bandwidth_kbps": 21618.43533588358,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1237.000000000029,
+    "bandwidth_kbps": 3949.225560408782,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1029.999999999971,
+    "bandwidth_kbps": 5923.3790145115345,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0000000000582,
+    "bandwidth_kbps": 7590.820634203642,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.9999999999418,
+    "bandwidth_kbps": 9074.048528421219,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1039.0000000000582,
+    "bandwidth_kbps": 13994.177293605822,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1119.9999999999418,
+    "bandwidth_kbps": 21722.026071521115,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1011.0000000000291,
+    "bandwidth_kbps": 26528.264920433463,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1002.0,
+    "bandwidth_kbps": 27723.827167488373,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1006.9999999999418,
+    "bandwidth_kbps": 27799.248616748733,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1160.0000000000873,
+    "bandwidth_kbps": 21736.804779811013,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 24394.76400869285,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1110.0,
+    "bandwidth_kbps": 16754.140526986324,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1000.9999999999709,
+    "bandwidth_kbps": 24316.575927976097,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 26178.215008628555,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1208.9999999999418,
+    "bandwidth_kbps": 21786.10642878822,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.0000000000873,
+    "bandwidth_kbps": 24938.186551845247,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1008.9999999999127,
+    "bandwidth_kbps": 23026.781756847944,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1430.0000000000582,
+    "bandwidth_kbps": 17039.391741395753,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 20718.12375828488,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1000.9999999999709,
+    "bandwidth_kbps": 20431.96331996889,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1077.999999999971,
+    "bandwidth_kbps": 12172.278858813896,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1002.0000000000582,
+    "bandwidth_kbps": 10609.78939921117,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0000000000291,
+    "bandwidth_kbps": 14558.084787076745,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 16481.998329339254,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1047.0,
+    "bandwidth_kbps": 14634.897029072616,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1032.9999999999127,
+    "bandwidth_kbps": 15715.105208858877,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0000000000873,
+    "bandwidth_kbps": 20848.927160801035,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 23605.975081431177,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1000.9999999999709,
+    "bandwidth_kbps": 22280.12869989756,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0,
+    "bandwidth_kbps": 21847.779011802286,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0,
+    "bandwidth_kbps": 17694.045026616182,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1000.9999999999709,
+    "bandwidth_kbps": 23442.657726988396,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.0,
+    "bandwidth_kbps": 23847.32429595471,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.0,
+    "bandwidth_kbps": 26615.891678377393,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1000.9999999999709,
+    "bandwidth_kbps": 26748.39853558124,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1108.0000000000582,
+    "bandwidth_kbps": 16877.109935586355,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1000.9999999999709,
+    "bandwidth_kbps": 25100.396066764857,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1008.0000000000291,
+    "bandwidth_kbps": 25196.635199580167,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.0,
+    "bandwidth_kbps": 21541.35759220828,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1000.9999999999709,
+    "bandwidth_kbps": 26630.082948314866,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1000.9999999999709,
+    "bandwidth_kbps": 25413.09904857307,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1008.0000000000291,
+    "bandwidth_kbps": 28160.53073114473,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.0,
+    "bandwidth_kbps": 29236.656193114744,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1177.999999999971,
+    "bandwidth_kbps": 21265.284246579056,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 28139.33334800167,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.0000000000873,
+    "bandwidth_kbps": 23004.8735524569,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.9999999999709,
+    "bandwidth_kbps": 24942.971156603548,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1148.0,
+    "bandwidth_kbps": 20467.760456143475,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1039.999999999971,
+    "bandwidth_kbps": 24520.303158229013,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1210.000000000029,
+    "bandwidth_kbps": 27289.337940586163,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0000000000291,
+    "bandwidth_kbps": 24947.385511709006,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1069.9999999999418,
+    "bandwidth_kbps": 18820.151982275445,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1279.999999999971,
+    "bandwidth_kbps": 13041.847023906466,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.0000000000873,
+    "bandwidth_kbps": 16630.84818357318,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1139.0,
+    "bandwidth_kbps": 8769.610646976322,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1040.9999999999418,
+    "bandwidth_kbps": 18806.693894117423,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1129.000000000029,
+    "bandwidth_kbps": 19928.377278692475,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1000.9999999999709,
+    "bandwidth_kbps": 21490.698059098122,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 21754.177136064205,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1029.999999999971,
+    "bandwidth_kbps": 16709.779071797235,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1139.0,
+    "bandwidth_kbps": 17212.922341485795,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1181.000000000029,
+    "bandwidth_kbps": 17183.872187346613,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1099.0000000000582,
+    "bandwidth_kbps": 18183.465655177362,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1099.9999999999127,
+    "bandwidth_kbps": 19640.762711807824,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1080.000000000029,
+    "bandwidth_kbps": 19589.557285909475,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1061.0000000000582,
+    "bandwidth_kbps": 19952.970246030898,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0,
+    "bandwidth_kbps": 21196.216534425188,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.9999999999709,
+    "bandwidth_kbps": 21864.620871922423,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.0,
+    "bandwidth_kbps": 24252.550198759636,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1000.9999999999709,
+    "bandwidth_kbps": 25068.548216964155,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1138.000000000029,
+    "bandwidth_kbps": 19290.472805674304,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1100.000000000029,
+    "bandwidth_kbps": 17628.436701103066,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1519.999999999971,
+    "bandwidth_kbps": 6968.956687649371,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1240.0,
+    "bandwidth_kbps": 18262.489704405507,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1079.9999999999127,
+    "bandwidth_kbps": 21440.488496771384,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1111.0000000001164,
+    "bandwidth_kbps": 21764.77778264167,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1049.0,
+    "bandwidth_kbps": 21337.952431969734,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1079.9999999999418,
+    "bandwidth_kbps": 21378.8519673416,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999418,
+    "bandwidth_kbps": 18759.843861493275,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1150.0000000001164,
+    "bandwidth_kbps": 10728.929486350267,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 15986.295442475624,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1039.9999999999418,
+    "bandwidth_kbps": 10255.758469356404,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0,
+    "bandwidth_kbps": 15362.692217022146,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1090.0,
+    "bandwidth_kbps": 15530.38484346503,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1140.0,
+    "bandwidth_kbps": 18837.44995340699,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1120.0,
+    "bandwidth_kbps": 18009.31553341182,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1080.0000000000582,
+    "bandwidth_kbps": 17585.375945095868,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0,
+    "bandwidth_kbps": 16132.072772079326,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1029.9999999999418,
+    "bandwidth_kbps": 13652.50980787594,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1069.0,
+    "bandwidth_kbps": 6179.021754754722,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.0,
+    "bandwidth_kbps": 15781.720414732974,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1050.0000000000582,
+    "bandwidth_kbps": 7810.958550529672,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1000.9999999999418,
+    "bandwidth_kbps": 13544.411998996497,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1040.0,
+    "bandwidth_kbps": 13558.877605935348,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0,
+    "bandwidth_kbps": 22098.07521888715,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.0,
+    "bandwidth_kbps": 18509.046250977208,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1080.0,
+    "bandwidth_kbps": 17959.171671363558,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1040.0,
+    "bandwidth_kbps": 20254.37649142787,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1029.0,
+    "bandwidth_kbps": 21940.658527039363,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1040.0000000000582,
+    "bandwidth_kbps": 19540.450419448825,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.9999999999418,
+    "bandwidth_kbps": 12123.313647456815,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 14385.359923076401,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0000000000582,
+    "bandwidth_kbps": 14293.044088198045,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999418,
+    "bandwidth_kbps": 9844.060760465554,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1050.0,
+    "bandwidth_kbps": 6496.442123226406,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1050.0000000000582,
+    "bandwidth_kbps": 4519.318803665274,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 4250.8444192938205,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.9999999999418,
+    "bandwidth_kbps": 2252.4961598532714,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1030.0,
+    "bandwidth_kbps": 8775.376317799455,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1230.0,
+    "bandwidth_kbps": 7358.960674997467,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1331.0000000000582,
+    "bandwidth_kbps": 9131.9226093211,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1019.9999999999418,
+    "bandwidth_kbps": 15165.77105419037,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1029.0,
+    "bandwidth_kbps": 11386.328682441786,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.0,
+    "bandwidth_kbps": 20683.28080861392,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 20851.73948201718,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1040.0000000000582,
+    "bandwidth_kbps": 24426.595397915444,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1039.0,
+    "bandwidth_kbps": 27591.382582648952,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1079.9999999999418,
+    "bandwidth_kbps": 27575.08202389723,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1001.0000000000582,
+    "bandwidth_kbps": 27018.03266336091,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1198.9999999999418,
+    "bandwidth_kbps": 28983.058775609206,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1761.0,
+    "bandwidth_kbps": 11565.492422947662,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0,
+    "bandwidth_kbps": 21153.335683274276,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1030.0,
+    "bandwidth_kbps": 13217.432433649039,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1030.0000000000582,
+    "bandwidth_kbps": 9872.298357519225,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.0,
+    "bandwidth_kbps": 3850.9785141944617,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1020.0,
+    "bandwidth_kbps": 4430.70470947333,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1010.9999999999418,
+    "bandwidth_kbps": 5929.807087681272,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1009.0,
+    "bandwidth_kbps": 11197.519335139517,
+    "latency_ms": 20.0
+  },
+  {
+    "duration_ms": 1040.0,
+    "bandwidth_kbps": 6766.494425899886,
+    "latency_ms": 20.0
+  }
+]

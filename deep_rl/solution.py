@@ -4,10 +4,12 @@ from collections import namedtuple
 import sys
 
 sys.path.append("..")
-from deep_rl.ppo import PPO
+from deep_rl.ppo_test import PPO
 from sabre360_with_qoe import SessionInfo, SessionEvents
 from utils import get_tiles_in_viewport, Pose2VideoXY
 from abr.TiledAbr import TiledAbr
+from myPrint import print_debug
+from myLog import myLog
 
 ''' 360-degree video设置 '''
 TILES_X = 8
@@ -23,13 +25,18 @@ MAX_ET_LEN = 5  # 最大的ET buffer长度 s
 STATE_DIMENSION = 36
 HISTORY_LENGTH = 1
 ACTION_DIMENSION = 27
-NN_MODEL = "deep_rl/model/PPO_et_update_0_500.pth"
+# NN_MODEL = "deep_rl/model/PPO_et_update_0_650.pth"
+# NN_MODEL = "deep_rl/PPO_preTrained/fcc/PPO_fcc_0_740.pth"
+NN_MODEL = "deep_rl/PPO_preTrained/norway/PPO_norway_0_750.pth"
 lr_actor = 0.0003  # learning rate for actor network
 lr_critic = 0.001  # learning rate for critic network
 K_epochs = 80  # update policy for K epochs in one PPO update
 eps_clip = 0.2  # clip parameter for PPO
 gamma = 0.85  # discount factor
 device = torch.device('cpu')
+
+LOG_PATH = "log/melody.log"
+LOG_FLAG = False
 
 TiledAction = namedtuple('TiledAction', 'segment tile quality delay')
 
@@ -75,6 +82,9 @@ class Melody(TiledAbr):
 
         self.acc = np.zeros(MAX_ET_LEN)
         self.acc_count = 0
+        self.bw_mask = [0 for i in range(ACTION_DIMENSION - 2)]
+
+        self.log = myLog(LOG_PATH)  # 日志文件
 
     def initialize(self):
         ''' 初始化状态，返回state'''
@@ -104,33 +114,34 @@ class Melody(TiledAbr):
         for segment_idx in range(start_et_segment, end_et_segment + 1):
             s_avg_level.append(0)
         assert len(s_avg_level) == MAX_ET_LEN + 1
-        self.state[0, 18:24] = torch.Tensor(s_avg_level)
+        self.state[0, 23:29] = torch.Tensor(s_avg_level)
 
         # 视点运动信息
         std_x, std_y = self.calculate_pose_spead(first_segment, 0)
-        self.state[0, 24] = std_x * 100
-        self.state[0, 25] = std_y * 100
+        self.state[0, 29] = std_x * 100
+        self.state[0, 30] = std_y * 100
 
         # 视角预测准确度
         self.acc = self.calculate_pred_acc()
-        self.state[0, 26:31] = torch.Tensor(self.acc)
+        self.state[0, 31:36] = torch.Tensor(self.acc)
 
     def get_action(self):
         ''' 决策 '''
         if self.first_step:
             self.initialize()  # 初始化state
-            ppo_output = self.ppo_agent.select_action(self.state)
+            ppo_output = self.ppo_agent.select_action(self.state, self.bw_mask)
             self.first_step = False
         else:
             self.calculate_state()  # 更新state
-            ppo_output = self.ppo_agent.select_action(self.state)
-            # print(ppo_output)
+            ppo_output = self.ppo_agent.select_action(self.state, self.bw_mask)
+
+        if LOG_FLAG:
+            self.log.log_state(self.state)
+            self.log.log_bw_mask(self.bw_mask)
+            self.log.log_ppo_output(ppo_output)
+
         action = self.transform_action(ppo_output)
         self.last_action = action
-        # print('')
-        # print('bt buffer length= {}'.format(self.base_buffer_depth))
-        # print('et buffer length= {}'.format(self.enhance_buffer_depth))
-        # print(action, '\n')
         return action
 
     def calculate_state(self):
@@ -141,6 +152,10 @@ class Melody(TiledAbr):
         first_et_segment = first_segment
         if first_segment_offset != 0:
             first_et_segment += 1
+        if LOG_FLAG:
+            self.log.log_playhead(playhead)
+            self.log.log_first_et(first_et_segment)
+
         segment_depth = self.buffer.get_buffer_depth()
         self.contents = {}  # 每个segment内的tile信息，未被下载的是None
         for i in range(segment_depth):
@@ -148,53 +163,85 @@ class Melody(TiledAbr):
             self.contents[segment_id] = self.buffer.get_buffer_contents(segment_id)
 
         if not self.is_sleep:
-            self.update_throughput(self.last_action)
-        self.update_buffer_length(self.last_action, self.is_BT_download, first_et_segment)
-        self.update_viewport_pred(first_segment, first_et_segment)
-        future_size_in_BT, future_size_in_ET, tile_num_in_ET = self.update_download_size(first_et_segment)
-        self.update_avg_level(first_segment, first_et_segment, self.contents)
+            self.update_throughput(self.last_action)  # 更新过去k时刻吞吐量
+        self.update_buffer_length(self.last_action, self.is_BT_download, first_et_segment)  # 更新缓冲区长度
+        self.update_viewport_pred(first_segment, first_et_segment)  # 更新实时的视角预测结果
+        future_size_in_BT, future_size_in_ET, tile_num_in_ET = self.update_download_size(first_et_segment)  # 更新待下载的数据量
+        self.update_avg_level(first_segment, first_et_segment, self.contents)  # 更新平均码率等级
 
         # ================== state计算 ==================
         # 吞吐量
         s_throughput = self.past_k_tput.copy()
+        # print(s_throughput)
         while len(s_throughput) < 10:
             s_throughput.insert(0, 10000)
         assert len(s_throughput) == 10
+
+        sum = 0
+        for i in range(len(s_throughput)):
+            sum += 1 / s_throughput[i]
+        pred_tput = len(s_throughput) / sum  # kbps
+        print_debug("pred_tput = {}".format(pred_tput))
+        action_bitrate = self.cal_action_bitrate(first_et_segment)
+        for video in range(MAX_ET_LEN):
+            for level in range(BITRATE_LEVEL - 1):
+                bitrate = action_bitrate[video][level]
+                index = video * (BITRATE_LEVEL - 1) + level
+                max_download_time = (first_et_segment + video) * 1000. - playhead
+                download_time = bitrate / pred_tput  # ms
+                if download_time > max_download_time:
+                    self.bw_mask[index] = 1  # 禁止下载
+                    print_debug("max_download_time = {}".format(max_download_time))
+                    print_debug("download_time = {}".format(download_time))
+                else:
+                    self.bw_mask[index] = 0
+
+        print_debug("bw mask = {}".format(self.bw_mask))
+
         s_throughput = np.array(s_throughput) / 10000  # 归一化
         self.state[0, 0:10] = torch.Tensor(s_throughput)
 
         # buffer长度
         self.state[0, 10] = self.base_buffer_depth
         self.state[0, 11] = self.enhance_buffer_depth
+        print_debug('base_buffer_depth = {}'.format(self.base_buffer_depth))
+        print_debug('enhance_buffer_depth = {}'.format(self.enhance_buffer_depth))
 
         # 待下载的数据量
         s_future_size = future_size_in_BT + future_size_in_ET
         assert len(s_future_size) == 1 + MAX_ET_LEN
         s_future_size = np.array(s_future_size) / 1000000.
         self.state[0, 12:18] = torch.Tensor(s_future_size)
-        tile_num_in_ET = np.array(tile_num_in_ET) / 10
+        tile_num_in_ET = np.array(tile_num_in_ET) / 10.
         self.state[0, 18:23] = torch.Tensor(tile_num_in_ET)
+        print_debug("s_future_size_in_et = {}".format(s_future_size * 1000000.))
+        print_debug("tile_num_in_ET = {}".format(tile_num_in_ET * 10))
 
         # 平均码率等级
         end_et_segment = first_et_segment + MAX_ET_LEN
         s_avg_level = []
-        for segment_idx in range(first_et_segment, end_et_segment + 1):
+        if first_segment == first_et_segment:
+            start_segment = first_segment - 1
+        else:
+            start_segment = first_segment
+        for segment_idx in range(start_segment, end_et_segment):
             if segment_idx in self.avg_level_dict:
                 s_avg_level.append(self.avg_level_dict[segment_idx])
             else:
                 s_avg_level.append(0)
         assert len(s_avg_level) == MAX_ET_LEN + 1
-        self.state[0, 18:24] = torch.Tensor(s_avg_level)
+        self.state[0, 23:29] = torch.Tensor(s_avg_level)
 
         # 视点运动信息
         std_x, std_y = self.calculate_pose_spead(first_segment, first_segment_offset)
-        self.state[0, 24] = std_x * 100
-        self.state[0, 25] = std_y * 100
+        self.state[0, 29] = std_x * 100
+        self.state[0, 30] = std_y * 100
 
         # 视角预测准确度(5个step更新一次)
         if self.acc_count % MAX_ET_LEN == 0:
             self.acc = self.calculate_pred_acc()
-            self.acc_count += 1
+            self.acc_count = 0
+        self.acc_count += 1
         self.state[0, 31:36] = torch.Tensor(self.acc)
 
     def transform_action(self, ppo_output):
@@ -206,6 +253,9 @@ class Melody(TiledAbr):
             ''' delay '''
             action.append(TiledAction(-1, -1, -1, SLEEP_PERIOD))
             self.is_sleep = True
+            print_debug("sleep.\n")
+            if LOG_FLAG:
+                self.log.log_sleep(SLEEP_PERIOD)
         elif ppo_output == ACTION_DIMENSION - 2:
             ''' bt '''
             self.is_BT_download = True
@@ -213,6 +263,9 @@ class Melody(TiledAbr):
             assert segment_id <= len(self.manifest.segments) - 1
             for tile_id in range(TILES_X * TILES_Y):
                 action.append(TiledAction(segment_id, tile_id, 0, 0))
+            print_debug('download bt segment {}\n'.format(segment_id))
+            if LOG_FLAG:
+                self.log.log_bt_action(segment_id)
         else:
             ''' et '''
             self.is_ET_download = True
@@ -242,6 +295,9 @@ class Melody(TiledAbr):
                 assert len(download_tile) != 0
                 for tile_id in download_tile:
                     action.append(TiledAction(segment_id, tile_id, level, 0))
+            print_debug('download et segment {} at {}\n'.format(segment_id, level))
+            if LOG_FLAG:
+                self.log.log_et_action(segment_id, level)
         return action
 
     def update_throughput(self, action):
@@ -250,6 +306,8 @@ class Melody(TiledAbr):
         for i in range(len(action)):
             size += self.video_size[action[i].segment][action[i].tile][action[i].quality]  # bit
         download_time = self.session_info.get_total_download_time()  # ms
+        if LOG_FLAG:
+            self.log.log_download_time(download_time)
         assert download_time != 0
         tput = size / download_time  # kbps
         if len(self.past_k_tput) >= TPUT_HISTORY_LEN:
@@ -312,7 +370,7 @@ class Melody(TiledAbr):
         next_BT_segment = self.latest_BT_segment + 1
         download_bit = 0
         if next_BT_segment <= len(self.video_size) - 1:  # 有未下载的BT层segment
-            for i in range(len(self.video_size[next_BT_segment])):
+            for i in range(TILES_X * TILES_Y):
                 download_bit += self.video_size[next_BT_segment][i][0]
         else:  # 没有未下载的BT层segment
             download_bit = 0
@@ -354,19 +412,18 @@ class Melody(TiledAbr):
             pred_tiles = self.pred_tiles_dict[segment_idx]
             sum_level = 0
             none_cnt = 0
-            if segment_idx > self.latest_BT_segment:  # 缓冲区内没有这个seg，则平均码率等级记为-1
+            if segment_idx not in contents:  # 缓冲区内没有这个seg，则平均码率等级记为-1
                 self.avg_level_dict[segment_idx] = -1
-                continue
-            assert segment_idx in contents
-            for tile in pred_tiles:
-                downloaded_tile_info = contents[segment_idx]
-                tmp = downloaded_tile_info[tile]
-                if tmp is None:
-                    none_cnt += 1
-                else:
-                    sum_level += tmp
-            avg_level = sum_level / max((len(pred_tiles) - none_cnt), 1)
-            self.avg_level_dict[segment_idx] = avg_level
+            else:
+                for tile in pred_tiles:
+                    downloaded_tile_info = contents[segment_idx]
+                    tmp = downloaded_tile_info[tile]
+                    if tmp is None:
+                        none_cnt += 1
+                    else:
+                        sum_level += tmp
+                avg_level = sum_level / max((len(pred_tiles) - none_cnt), 1)
+                self.avg_level_dict[segment_idx] = avg_level
 
     def calculate_pose_spead(self, played_segment, offset):
         ''' 计算视点的运动速度(方差) '''
@@ -417,3 +474,28 @@ class Melody(TiledAbr):
             pred_acc = view_predictor.get_pred_acc(pred_pose, real_pose)
             acc[i] = pred_acc
         return np.array(acc)
+
+    def cal_action_bitrate(self, first_et_segment):
+        ret = []
+        for i in range(MAX_ET_LEN):  # 遍历et buffer中的segment
+            size = []
+            for level in range(1, BITRATE_LEVEL):
+                download_bit = 0
+                segment_idx = first_et_segment + i
+                pred_tiles = self.pred_tiles_dict[segment_idx]
+                if segment_idx >= len(self.video_size) - 1:  # 超过segment idx
+                    size.append(download_bit)
+                    continue
+
+                content = self.buffer.get_buffer_contents(segment_idx)
+                if content is None:  # bt层没下载过
+                    size.append(0)
+                    continue
+
+                for tile_id in pred_tiles:
+                    assert content[tile_id] is not None
+                    if content[tile_id] == 0:
+                        download_bit += self.video_size[segment_idx][tile_id][level]
+                size.append(download_bit)
+            ret.append(size)
+        return ret

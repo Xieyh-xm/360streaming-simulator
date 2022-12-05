@@ -1,14 +1,14 @@
 import torch
 import torch.nn as nn
-# from deep_rl.ac.actor_critic import ActorCritic
-from deep_rl.ac.actor_critic_et_update_test import ActorCritic
-
+# from deep_rl.ac.actor_critic_et_update import ActorCritic
+from deep_rl.ac.actor_critic_bw_mask import ActorCritic
 
 ################################## PPO Policy ##################################
 class RolloutBuffer:
     def __init__(self):
         self.actions = []
         self.states = []
+        self.bw_mask = []
         self.logprobs = []
         self.rewards = []
         self.is_terminals = []
@@ -16,6 +16,7 @@ class RolloutBuffer:
     def clear(self):
         del self.actions[:]
         del self.states[:]
+        del self.bw_mask[:]
         del self.logprobs[:]
         del self.rewards[:]
         del self.is_terminals[:]
@@ -46,16 +47,20 @@ class PPO:
 
         self.MseLoss = nn.MSELoss()
 
-    def select_action(self, state):
+    def select_action(self, state, bw_mask):
         with torch.no_grad():
             state = torch.FloatTensor(state).to(self.device)
-            action, action_probs = self.policy_old.act(state)
+            action, action_probs = self.policy_old.act(state, bw_mask)
 
         state_n = torch.zeros([1, self.state_dim])
         state_n[0, :] = state[0, :]
 
+        bw_mask_n = torch.zeros([1, self.action_dim - 2])
+        bw_mask_n[0, :] = torch.Tensor(bw_mask)
+
         self.buffer.states.append(state_n)
         self.buffer.actions.append(action)
+        self.buffer.bw_mask.append(bw_mask_n)
         self.buffer.logprobs.append(action_probs)
 
         return action
@@ -76,14 +81,16 @@ class PPO:
 
         # convert list to tensor
         old_states = torch.squeeze(torch.stack(self.buffer.states, dim=0)).detach().to(self.device)
+        old_bw_masks = torch.squeeze(torch.stack(self.buffer.bw_mask, dim=0)).detach().to(self.device)
         old_actions = torch.squeeze(torch.stack(self.buffer.actions, dim=0)).detach().to(self.device)
+
         old_logprobs = torch.squeeze(torch.stack(self.buffer.logprobs, dim=0)).detach().to(self.device)
 
         # Optimize policy for K epochs
         for _ in range(self.K_epochs):
             # Evaluating old actions and values
             # Step 1: 前向传播
-            logprobs, state_values, dist_entropy = self.policy.evaluate(old_states, old_actions)
+            logprobs, state_values, dist_entropy = self.policy.evaluate(old_states, old_bw_masks, old_actions)
 
             # match state_values tensor dimensions with rewards tensor
             state_values = torch.squeeze(state_values)

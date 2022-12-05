@@ -1,11 +1,35 @@
 ''' 用于测试的程序 '''
 import random
 import numpy as np
-from utils import get_trace_file
+from utils import get_trace_file, print_metrics, print_to_csv
 from sabre360_with_qoe import Session
 from tqdm import tqdm
 
-NETWORK_TRACE_NUM = 40
+# net = "norway-9M"
+# net = "fcc-9M"
+# net = "4g-logs"
+# net = "4g-scaling"
+# net = "fcc-scaling"
+net = "norway-scaling"
+if net == "fcc-scaling":
+    net_trace = "./network/fcc-scaling"
+    NETWORK_TRACE_NUM = 290
+elif net == "norway-scaling":
+    net_trace = "./network/norway-scaling"
+    NETWORK_TRACE_NUM = 310
+elif net == "4g-scaling":
+    net_trace = "./network/4g-scaling"
+    NETWORK_TRACE_NUM = 40
+elif net == "4g-logs":
+    net_trace = "./network/raw_trace/4Glogs"
+    NETWORK_TRACE_NUM = 40
+elif net == "fcc-9M":
+    net_trace = "./network/fcc-9M"
+    NETWORK_TRACE_NUM = 290
+elif net == "norway-9M":
+    net_trace = "./network/norway-9M"
+    NETWORK_TRACE_NUM = 310
+
 VIDEO_TRACE_NUM = 18
 USER_TRACE_NUM = 48
 
@@ -33,24 +57,11 @@ elif TestABR == "Melody":
     default_config['abr'] = Melody
 
 
-def print_metrics(metrics):
-    ''' ====== 打印各项指标 =================================
-       [0]score [1]qoe [2]quality [3]stall_time [4]var_space
-       [5]var_time [6]bandwidth_usage [7]bandwidth_wastage'''
-    print("------------------------------------------------------------------")
-    print('Score: {:.2f}'.format(metrics[0]))
-    print('QoE: {:.2f}\t\tbandwidth_usage: {:.2f}'.format(metrics[1], metrics[6]))
-    print('Quality: {:.2f}\tStall time: {:.2f}\t'.format(metrics[2], metrics[3]))
-    print('Oscillation in space: {:.2f}\tOscillation in time: {:.2f}'.format(metrics[4], metrics[5]))
-    wastage_ratio = metrics[7] / metrics[6]
-    print('Bandwidth wastage: {:.2f}'.format(metrics[7]))
-    print('Wastage ratio: {:.2f}\n'.format(wastage_ratio))
-
-
 def test(net_id, video_id, user_id):
     # set config
     config = default_config.copy()
-    network_file, video_file, user_file = get_trace_file(net_id, video_id, user_id)
+    network_file, video_file, user_file = get_trace_file(net_trace, net_id, video_id, user_id)
+    # print("net id  = {}\t video id = {}\t user id = {}".format(net_id, video_id, user_id))
     config['bandwidth_trace'] = network_file
     config['manifest'] = video_file
     config['pose_trace'] = user_file
@@ -88,7 +99,10 @@ def test_network_samples(network_batch=NETWORK_TRACE_NUM, video_batch=VIDEO_TRAC
         avgs += test_video_samples(net_id, video_batch, user_batch)
     avgs /= network_batch
     print_metrics(avgs)
+    print_to_csv(avgs, TestABR, net)
 
 
+random.seed(10)
 if __name__ == '__main__':
-    test_network_samples(network_batch=10, video_batch=4, user_batch=5)
+    test_network_samples(network_batch=20, video_batch=4, user_batch=5)
+    # test(1, 1, 1)

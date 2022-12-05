@@ -149,11 +149,11 @@ def resize_json_trace(target_bw):
 
 
 def main():
-    resize_json_trace(target_bw=12500)  # kbps
+    resize_json_trace(target_bw=9000)  # kbps
     # trace2json(orgin="Genet")
 
 
-RAW_PATH = "../network/fcc/"
-NEW_PATH = "../network/fcc-scaling/"
+RAW_PATH = "../network/raw_trace/norway/"
+NEW_PATH = "../network/norway-9M/"
 if __name__ == '__main__':
     main()

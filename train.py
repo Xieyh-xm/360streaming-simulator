@@ -4,8 +4,9 @@ import torch
 import random
 from datetime import datetime
 # from deep_rl.rl_env.rl_env import RLEnv
-from deep_rl.rl_env.rl_env_et_update import RLEnv
+from deep_rl.rl_env.rl_env_bw_mask import RLEnv
 from deep_rl.ppo import PPO
+# from deep_rl.ppo_test import PPO
 
 
 def train():
@@ -13,19 +14,19 @@ def train():
     max_training_timesteps = int(3e6)  # break training loop if timeteps > max_training_timesteps
 
     # ============== Save Model ==============
-    env_name = "et_update"
+    env_name = "fcc"
     print("Training environment name : " + env_name)
-    save_model_freq = 25  # save model frequency (in num timesteps)
+    save_model_freq = 10  # save model frequency (in num timesteps)
 
     # =============== Hyper-parameter Setting ===============
     device = torch.device('cpu')
     print("Device set to : ", device)
 
     # K_epochs = 80  # update policy for K epochs in one PPO update
-    K_epochs = 20  # update policy for K epochs in one PPO update
+    K_epochs = 40  # update policy for K epochs in one PPO update
 
     # eps_clip = 0.2  # clip parameter for PPO
-    eps_clip = 0.05  # clip parameter for PPO
+    eps_clip = 0.1  # clip parameter for PPO
     gamma = 0.95  # discount factor
 
     # 起始300轮
@@ -33,12 +34,15 @@ def train():
     # lr_critic = 0.001  # learning rate for critic network
 
     # 300轮后
-    lr_actor = 0.00002  # learning rate for actor network
-    lr_critic = 0.00005  # learning rate for critic network
+    lr_actor = 0.00003  # learning rate for actor network
+    lr_critic = 0.0001  # learning rate for critic network
 
     random_seed = 0  # set random seed if required (0 = no random seed)
 
-    env = RLEnv()  # creat environment
+    # net_trace = "./network/real_trace"
+    net_trace = "./network/fcc-scaling"
+    # net_trace = "./network/generate"
+    env = RLEnv(net_trace)  # creat environment
 
     state_dim = env.get_state_dim()  # state space dimension
     action_dim = env.get_action_dim()  # action space dimension
@@ -88,73 +92,48 @@ def train():
     log_f.write('episode,timestep,reward\n')
 
     # todo: set up time_step
-    # time_step = 375
-    time_step = 525
+    time_step = 740
     i_episode = 0
     ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
 
     # =============== 随机化trace ===============
-    network_batch = 3
+    network_batch = 5
     # network_dict_size = 240  # generate 240
-    network_dict_size = 40  # generate 240
+    # network_dict_size = 600   # real_trace
+    network_dict_size = 290  # fcc 290
+    # network_dict_size = 310  # norway 310
     network_list = range(network_dict_size)
 
-    video_batch = 4
+    video_batch = 2
     video_dict_size = 18
     video_list = range(video_dict_size)
 
-    user_batch = 4
+    user_batch = 2
     user_dict_size = 48
     user_list = range(user_dict_size)
     # ===========================================
-
-    # training loop
-    while time_step <= max_training_timesteps:
-        cur_ep_reward = 0
-        time_step += 1
-        ticks = int(time.time())
-        random.seed(ticks)
-        cnt = 0
-        for net_id in random.sample(network_list, network_batch):
-            for video_id in random.sample(video_list, video_batch):
-                for user_id in random.sample(user_list, user_batch):
-                    state = env.reset(net_id, video_id, user_id)
-                    done = False
-                    while not done:
-                        cnt += 1
-                        # 1. select action with policy
-                        action = ppo_agent.select_action(state)
-                        state, reward, done = env.step(action)
-                        # 2. saving reward and is_terminals
-                        ppo_agent.buffer.rewards.append(reward)
-                        ppo_agent.buffer.is_terminals.append(done)
-                        cur_ep_reward += reward
-        ppo_agent.update()
-        print_running_reward = cur_ep_reward / cnt
-        print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {:.2f}".format(i_episode, time_step,
-                                                                                    print_running_reward))
-        log_f.write('{},{},{:.2f}\n'.format(i_episode, time_step, print_running_reward))
-        # save model weights
-        if time_step % save_model_freq == 0:
-            print("--------------------------------------------------------------------------------------------")
-            checkpoint_path = directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step)
-            print("saving model at : " + checkpoint_path)
-            ppo_agent.save(checkpoint_path)
-            print("model saved")
-            print("Elapsed Time  : ", datetime.now().replace(microsecond=0) - start_time)
-            print("--------------------------------------------------------------------------------------------")
-        i_episode += 1
+    # train
+    state, bw_mask = env.reset(1, 1, 1)
+    done = False
+    cnt = 0
+    cur_ep_reward = 0
+    while not done:
+        cnt += 1
+        # 1. select action with policy
+        action = ppo_agent.select_action(state, bw_mask)
+        state, bw_mask, reward, done = env.step(action)
+        # 2. saving reward and is_terminals
+        ppo_agent.buffer.rewards.append(reward)
+        ppo_agent.buffer.is_terminals.append(done)
+        cur_ep_reward += reward
+    print_running_reward = cur_ep_reward / cnt
+    avg_score = cur_ep_reward
+    print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {:.2f} \t Average Score: {:.2f}".format(i_episode,
+                                                                                                         time_step,
+                                                                                                         print_running_reward,
+                                                                                                         avg_score))
     log_f.close()
     env.close()
-
-    # print total training time
-    print("============================================================================================")
-    end_time = datetime.now().replace(microsecond=0)
-    print("Started training at (GMT) : ", start_time)
-    print("Finished training at (GMT) : ", end_time)
-    print("Total training time  : ", end_time - start_time)
-    print("============================================================================================")
-
     return
 
 

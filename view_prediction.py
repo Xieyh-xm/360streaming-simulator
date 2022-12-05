@@ -1,8 +1,6 @@
 import numpy as np
-import math
-from collections import deque
+import pandas as pd
 from headset import headset
-import navigation.navigation_graph as ng
 from sklearn.linear_model import Ridge, LinearRegression
 from utils import Pose2VideoXY, get_tiles_in_viewport, calculate_viewing_proportion
 

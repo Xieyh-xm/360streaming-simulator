@@ -2,8 +2,9 @@ import sys
 import os
 import json
 import math
+import pandas as pd
 
-Network_Root_Path = "./network/4Glogs"
+# Network_Root_Path = "./network/4Glogs"
 # Network_Root_Path = "./network/generate"
 Video_Root_Path = "./video/manifest"
 User_Root_Path = "./video/pose_trace"
@@ -105,7 +106,7 @@ def Pose2VideoXY(pose):
     return (video_x, video_y)
 
 
-def get_trace_file(network_trace_id, video_trace_id, user_trace_id):
+def get_trace_file(Network_Root_Path, network_trace_id, video_trace_id, user_trace_id):
     '''
     获取trace文件
     '''
@@ -217,6 +218,39 @@ def calculate_viewing_proportion(video_x, video_y, tile_idx):
     proportion = area / 1.0
 
     return proportion
+
+
+def print_metrics(metrics):
+    ''' ====== 打印各项指标 =================================
+       [0]score [1]qoe [2]quality [3]stall_time [4]var_space
+       [5]var_time [6]bandwidth_usage [7]bandwidth_wastage'''
+    print("------------------------------------------------------------------")
+    print('Score: {:.2f}'.format(metrics[0]))
+    print('QoE: {:.2f}\t\tbandwidth_usage: {:.2f}'.format(metrics[1], metrics[6]))
+    print('Quality: {:.2f}\tStall time: {:.2f}\t'.format(metrics[2], metrics[3]))
+    print('Oscillation in space: {:.2f}\tOscillation in time: {:.2f}'.format(metrics[4], metrics[5]))
+    wastage_ratio = metrics[7] / metrics[6]
+    print('Bandwidth wastage: {:.2f}'.format(metrics[7]))
+    print('Wastage ratio: {:.2f}\n'.format(wastage_ratio))
+
+
+def print_to_csv(metrics, algro, net):
+    ''' ====== 结果打印至csv文件 =============================
+       [0]score [1]qoe [2]quality [3]stall_time [4]var_space
+       [5]var_time [6]bandwidth_usage [7]bandwidth_wastage'''
+    data = {}
+    data["algro"] = algro
+    data["net_trace"] = net
+    data["Quailty"] = metrics[2]
+    data["var_space"] = metrics[4]
+    data["var_time"] = metrics[5]
+    data["Stall_time"] = metrics[3]
+    data["QoE"] = metrics[1]
+    wastage_ratio = metrics[7] / metrics[6]
+    data["Wastage ratio"] = wastage_ratio
+    data["score"] = metrics[0]
+    dataframe = pd.DataFrame(data, index=[0])
+    dataframe.to_csv("test_result", sep=',')
 
 
 if __name__ == '__main__':

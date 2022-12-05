@@ -37,14 +37,15 @@ OUTPUT_LOG = False
 
 
 class RLEnv:
-    def __init__(self):
+    def __init__(self, net_trace):
         self.state_dim = STATE_DIMENSION
         self.action_dim = ACTION_DIMENSION
         self.state = torch.zeros(HISTORY_LENGTH, STATE_DIMENSION)
+        self.net_trace = net_trace
 
         # ============= config 配置 =============
         self.net_id, self.video_id, self.user_id = 0, 0, 0
-        network_file, video_file, user_file = get_trace_file(self.net_id, self.video_id, self.user_id)
+        network_file, video_file, user_file = get_trace_file(self.net_trace, self.net_id, self.video_id, self.user_id)
 
         self.config = default_config.copy()
         self.config['bandwidth_trace'] = network_file
@@ -84,7 +85,7 @@ class RLEnv:
         self.net_id = network_trace_id
         self.video_id = video_trace_id
         self.user_id = user_trace_id
-        network_file, video_file, user_file = get_trace_file(self.net_id, self.video_id, self.user_id)
+        network_file, video_file, user_file = get_trace_file(self.net_trace, self.net_id, self.video_id, self.user_id)
 
         self.config = default_config.copy()
         self.config['bandwidth_trace'] = network_file

@@ -59,6 +59,8 @@ class ActorCritic(nn.Module):
             mask[self.action_dim - 2] = 1
         else:
             mask[self.action_dim - 1] = 1  # todo:有可下载的bt，就不sleep
+            # if bt_buffer_len <= 2.0:  # 2. bt_buffer_len至少两个chunk
+            #     mask[0:25] = 1
         download_bit_et = state_numpy[0, 13:18]  # et待下载数据量
         for segment_id in range(5):
             if download_bit_et[segment_id] == 0:
@@ -99,6 +101,8 @@ class ActorCritic(nn.Module):
                 mask[k, self.action_dim - 2] = 1
             else:
                 mask[k, self.action_dim - 1] = 1  # todo: 有可下载的bt，就不sleep
+                # if bt_buffer_len <= 2.0:  # 2. bt_buffer_len至少两个chunk
+                #     mask[k, 0:25] = 1
             download_bit_et = state_numpy[k, 13:18]  # et待下载数据量
             for segment_id in range(5):
                 if download_bit_et[segment_id] == 0:

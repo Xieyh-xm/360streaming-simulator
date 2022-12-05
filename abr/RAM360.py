@@ -14,7 +14,7 @@ STALL_TH = 3.0
 BANDWIDTH_TH = 0.5
 TILES_X = 8
 TILES_Y = 8
-DEFAULT_PRED_ACC = [0.75, 0.68, 0.62, 0.60, 0.57, 0.55, 0.52, 0.51, 0.49, 0.48]
+DEFAULT_PRED_ACC = [0.75, 0.68, 0.62, 0.60, 0.57]
 
 
 def str_tiled_action(self):
@@ -43,6 +43,8 @@ class RAM360(TiledAbr):
         self.qoe_estimator = QoeEstimator(TILES_X, TILES_Y, self.session_info.get_buffer(), self.bitrate)
 
         self.last_action = None
+        self.update_acc_count = 0
+        self.acc = None
 
     def get_action(self):
         # 变量更新
@@ -56,8 +58,10 @@ class RAM360(TiledAbr):
             unplayed_segment_num -= 1
         max_download_segment_id = min(first_unplayed_segment + unplayed_segment_num, self.max_segment_id)
 
-        acc = self.calculate_pred_acc()  # 更新视角预测结果
         tput = self.calculate_throughput(self.last_action)
+        if self.update_acc_count % 5 == 0:
+            self.acc = self.calculate_pred_acc()  # 更新视角预测结果
+            self.update_acc_count += 1
 
         max_utility = float("-inf")
         optimal_action = None
@@ -69,10 +73,11 @@ class RAM360(TiledAbr):
             else:
                 self.pred_view[segment_id] = self.session_info.get_viewport_predictor().predict_view(model_x, model_y,
                                                                                                      segment_id)
-            if self.pred_view[segment_id] is not None:
-                (x_pred, y_pred) = self.pred_view[segment_id]
-            else:
-                x_pred, y_pred = 0.5, 0.5
+            (x_pred, y_pred) = self.pred_view[segment_id]
+            # if self.pred_view[segment_id] is not None:
+            #     (x_pred, y_pred) = self.pred_view[segment_id]
+            # else:
+            #     x_pred, y_pred = 0.5, 0.5
             tiles_in_viewport = get_tiles_in_viewport(x_pred, y_pred)  # 视窗内的tile
 
             cur_action = None
@@ -106,7 +111,7 @@ class RAM360(TiledAbr):
                         tmp_download_list = download_list.copy()
                         tmp_download_list[tile_id] = bit_level
 
-                        pred_accuracy = acc[min(segment_id - first_segment, len(acc) - 1)]
+                        pred_accuracy = self.acc[min(segment_id - first_segment, len(self.acc) - 1)]
                         old_quality = self.qoe_estimator.get_total_quality(segment_id, {}, self.pred_view,
                                                                            pred_accuracy)
                         new_quality = self.qoe_estimator.get_total_quality(segment_id, tmp_download_list,
@@ -127,7 +132,7 @@ class RAM360(TiledAbr):
 
                 cur_action = AvailableAction(segment_id, download_list)
                 if len(download_list) != 0:
-                    pred_accuracy = acc[min(segment_id - first_segment, len(acc) - 1)]
+                    pred_accuracy = self.acc[min(segment_id - first_segment, len(self.acc) - 1)]
                     old_quality = self.qoe_estimator.get_total_quality(segment_id, {}, self.pred_view,
                                                                        pred_accuracy)
                     new_quality = self.qoe_estimator.get_total_quality(segment_id, download_list, self.pred_view,

@@ -1087,6 +1087,7 @@ class Session:
                 self.score_one_step = - 5. * stall_time
                 self.total_score += self.score_one_step
                 continue
+
             ''' --------- 下载tile ---------'''
             self.total_download_time = 0
             progress_list = []
@@ -1097,7 +1098,7 @@ class Session:
                 bandwidth_usage += size  # bits
                 self.consumed_download_time = 0
                 ''' 模拟下载过程 '''
-                progress = self.network_model.download(size, action[i], is_first_tile, self.check_abandon)
+                progress = self.network_model.download(size, action[i], is_first_tile, None)
                 progress_list.append(copy.deepcopy(progress))
                 self.total_download_time += progress.time
 
@@ -1115,7 +1116,6 @@ class Session:
                 end_time = (self.last_played_segment + 1) * self.manifest.segment_duration
                 pose_list = self.user_model.get_pose_in_qoe(start_time, end_time)
                 self.prev_pose_trace[self.last_played_segment] = pose_list[0]
-
                 self.last_played_segment += 1
 
             assert self.last_played_segment > cur_played_segment
@@ -1153,14 +1153,13 @@ class Session:
             self.bandwidth_wastage += bandwidth_wastage  # kbps
 
             # 2. 线性组合
-            self.score_one_step = 1.0 * delta_quality - 5. * stall_time - 0.1 * delta_var_space - 0.1 * delta_var_time - 0.2 * bandwidth_wastage / 10
+            self.score_one_step = 1.0 * delta_quality - 5. * stall_time - 0.1 * delta_var_space - 0.1 * delta_var_time - 0.20 * bandwidth_wastage / 10
             # self.score_one_step = delta_quality / 8 - 5. * stall_time - 0.5 * delta_var_space - 0.5 * delta_var_time - 0.2 * bandwidth_wastage / 8
             self.total_score += self.score_one_step
 
             for i in range(len(action)):
                 progress = progress_list[i]
                 self.estimator.push(progress)
-                self.abr.report_action_complete(progress)
                 self.buffer.put_in_buffer(progress.segment, progress.tile, progress.quality)  # 将下载的chunk放入buffer
 
     def calculate_delta_quality(self, pose_list, segment_idx, download_tile):
@@ -1288,6 +1287,9 @@ class Session:
         wastage = wastage / (len(pose_list) * 1024.)
         # print("wastage = ", 0.05 * wastage / 8)
         return wastage
+
+    def set_algro_agent(self, agent):
+        self.abr.set_agent(agent)
 
     def get_total_metrics(self):
         metrics = np.zeros(8)
