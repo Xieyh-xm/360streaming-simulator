@@ -7,24 +7,27 @@ from tqdm import tqdm
 import pandas as pd
 
 # net = "4g-logs"
-# net = "fcc-scaling"
-net = "norway-scaling"
+net = "fcc-scaling"
+# net = "norway-scaling"
 # net = "fcc-9M"
 if net == "fcc-scaling":
-    net_trace = "./network/fcc-scaling"
+    net_trace = "./data_trace/network/fcc-scaling"
     NETWORK_TRACE_NUM = 290
 elif net == "norway-scaling":
-    net_trace = "./network/norway-scaling"
+    net_trace = "./data_trace/network/norway-scaling"
     NETWORK_TRACE_NUM = 310
 elif net == "4g-scaling":
-    net_trace = "./network/4Glogs"
+    net_trace = "./data_trace/network/4g-scaling"
     NETWORK_TRACE_NUM = 40
 elif net == "4g-logs":
-    net_trace = "./network/raw_trace/4Glogs"
+    net_trace = "./data_trace/network/raw_trace/4Glogs"
     NETWORK_TRACE_NUM = 40
 elif net == "fcc-9M":
-    net_trace = "./network/fcc-9M"
+    net_trace = "./data_trace/network/fcc-9M"
     NETWORK_TRACE_NUM = 290
+elif net == "norway-9M":
+    net_trace = "./data_trace/network/norway-9M"
+    NETWORK_TRACE_NUM = 310
 
 VIDEO_TRACE_NUM = 18
 USER_TRACE_NUM = 48
@@ -99,4 +102,5 @@ def test_network_samples(network_batch=NETWORK_TRACE_NUM, video_batch=VIDEO_TRAC
 
 random.seed(10)
 if __name__ == '__main__':
-    test_network_samples(network_batch=20, video_batch=4, user_batch=5)
+    test_network_samples(network_batch=10, video_batch=4, user_batch=5)
+    # test(8, 2, 2)

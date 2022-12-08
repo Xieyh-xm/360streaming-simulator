@@ -4,6 +4,8 @@ from headset import headset
 from sklearn.linear_model import Ridge, LinearRegression
 from utils import Pose2VideoXY, get_tiles_in_viewport, calculate_viewing_proportion
 
+PRED_STEP = 1
+
 
 class ViewportPrediction:
     def __init__(self):
@@ -61,8 +63,8 @@ class TestPrediction(ViewportPrediction):
             if start_time >= history_pose[idx][0]:
                 break
         start_idx = idx  # 起始节点
-        play_time = history_pose[start_idx:, 0]
-        head_x, head_y = history_pose[start_idx:, 1], history_pose[start_idx:, 2]
+        play_time = history_pose[start_idx::PRED_STEP, 0]
+        head_x, head_y = history_pose[start_idx::PRED_STEP, 1], history_pose[start_idx::PRED_STEP, 2]
         for i in range(1, len(head_x)):
             if head_x[i] - head_x[i - 1] >= 0.5:
                 head_x[i] -= 1.0

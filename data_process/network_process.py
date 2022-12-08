@@ -1,5 +1,6 @@
 import json
 import os
+import numpy as np
 
 ''' 用于放缩网络trace & 生成网络trace '''
 
@@ -10,11 +11,11 @@ class NetworkTrace:
     ''' used for json file '''
 
     def __init__(self, filename):
-        self.filename = filename
-        self.file_path = RAW_PATH + filename
+        self.file_path = filename
         self.play_duration = []  # ms
         self.bandwidth = []  # kbps
         self.latency = []  # ms
+        self.read_trace()
 
     def read_trace(self):
         with open(self.file_path) as file:
@@ -26,6 +27,10 @@ class NetworkTrace:
 
     def get_bw_avg(self):
         return sum(self.bandwidth) / len(self.bandwidth)  # kbps
+
+    def get_bw_std(self):
+        bw = np.array(self.bandwidth)
+        return np.std(bw)
 
     def scale_bw_avg(self, target_avg):
         ''' 缩放trace '''
@@ -153,7 +158,7 @@ def main():
     # trace2json(orgin="Genet")
 
 
-RAW_PATH = "../network/raw_trace/norway/"
+RAW_PATH = "../data_trace/network/norway-scaling/"
 NEW_PATH = "../network/norway-9M/"
 if __name__ == '__main__':
     main()

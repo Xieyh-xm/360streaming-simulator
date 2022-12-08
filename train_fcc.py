@@ -39,7 +39,7 @@ def train():
     random_seed = 0  # set random seed if required (0 = no random seed)
 
     # net_trace = "./network/real_trace"
-    net_trace = "./network/fcc-scaling"
+    net_trace = "./data_trace/network/fcc-scaling"
     # net_trace = "./network/generate"
     env = RLEnv(net_trace)  # creat environment
 
@@ -91,23 +91,24 @@ def train():
     log_f.write('episode,timestep,reward\n')
 
     # todo: set up time_step
-    time_step = 740
+    time_step = 850
     i_episode = 0
-    ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
+    # ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
+    ppo_agent.load("deep_rl/PPO_preTrained/norway/PPO_norway_0_850.pth")
 
     # =============== 随机化trace ===============
-    network_batch = 5
+    network_batch = 8
     # network_dict_size = 240  # generate 240
     # network_dict_size = 600   # real_trace
     network_dict_size = 290  # fcc 290
     # network_dict_size = 310  # norway 310
     network_list = range(network_dict_size)
 
-    video_batch = 2
+    video_batch = 1
     video_dict_size = 18
     video_list = range(video_dict_size)
 
-    user_batch = 2
+    user_batch = 1
     user_dict_size = 48
     user_list = range(user_dict_size)
     # ===========================================
@@ -140,9 +141,9 @@ def train():
         print_running_reward = cur_ep_reward / cnt
         avg_score = cur_ep_reward / session_num
         print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {:.2f} \t Average Score: {:.2f}".format(i_episode,
-                                                                                                           time_step,
-                                                                                                           print_running_reward,
-                                                                                                           avg_score))
+                                                                                                             time_step,
+                                                                                                             print_running_reward,
+                                                                                                             avg_score))
         log_f.write('{},{},{:.2f}\n'.format(i_episode, time_step, print_running_reward))
         # save model weights
         if time_step % save_model_freq == 0:

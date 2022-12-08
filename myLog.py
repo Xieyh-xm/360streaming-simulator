@@ -8,22 +8,27 @@ class myLog:
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)
 
-        # 创建handle，用于写入日志文件
-        self.logfile = path
-        self.fh = logging.FileHandler(self.logfile, mode='w')
-        self.fh.setLevel(logging.DEBUG)
+        if not self.logger.handlers:
+            # 创建handle，用于写入日志文件
+            self.logfile = path
+            self.fh = logging.FileHandler(self.logfile, mode='w')
+            self.fh.setLevel(logging.DEBUG)
 
-        # 创建handle，用于输出到控制台
-        self.ch = logging.StreamHandler()
-        self.ch.setLevel(logging.DEBUG)
+            # 创建handle，用于输出到控制台
+            self.ch = logging.StreamHandler()
+            self.ch.setLevel(logging.DEBUG)
 
-        # 定义handle的输出格式
-        formatter = logging.Formatter('%(asctime)s - %(message)s')
-        self.fh.setFormatter(formatter)
-        self.ch.setFormatter(formatter)
+            # 定义handle的输出格式
+            formatter = logging.Formatter('%(asctime)s - %(message)s')
+            self.fh.setFormatter(formatter)
+            self.ch.setFormatter(formatter)
 
-        self.logger.addHandler(self.fh)
-        self.logger.addHandler(self.ch)
+            # self.logger.handler = []
+            self.logger.addHandler(self.fh)
+            self.logger.addHandler(self.ch)
+
+    def get_log(self):
+        return self.logger
 
     def log_ppo_output(self, output):
         self.logger.info("ppo output : {}".format(output))
@@ -50,16 +55,18 @@ class myLog:
         state = state[0]
         # 吞吐量
         self.logger.info("tput : {}".format(state[0:10]))
-        self.logger.info("bt buffer leng: {} \t et buffer len : {}".format(state[10], state[11]))
+        self.logger.info("bt buffer len: {} \t et buffer len : {}".format(state[10], state[11]))
         self.logger.info("BT bitrate : {}".format(state[12]))
         self.logger.info("ET bitrate : {}".format(state[13:18]))
         self.logger.info("tile num : {}".format(state[18:23]))
-        self.logger.info("avg level : {}".format(state[24:29]))
+        self.logger.info("prev avg level : {}".format(state[23]))
+        self.logger.info("avg et level : {}".format(state[24:29]))
         self.logger.info("fov speed at X : {} \t fov speed at Y : {}".format(state[29], state[30]))
         self.logger.info("pred acc : {}".format(state[31:36]))
 
-    def log_stall(self, stall_time):
-        self.logger.info("stall time : {} ms".format(stall_time))
+    def log_stall_time(self, stall_time):
+        if stall_time > 0:
+            self.logger.info("stall time : {} ms".format(stall_time))
 
     def log_metric(self, metrics):
         self.logger.info("------------------------------------------------------------------")

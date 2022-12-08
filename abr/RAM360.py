@@ -4,6 +4,7 @@ import numpy as np
 from utils import get_trace_file, get_tiles_in_viewport, calculate_viewing_proportion, Pose2VideoXY
 from abr.TiledAbr import TiledAbr
 from sabre360_with_qoe import SessionInfo, SessionEvents
+from myLog import myLog
 
 TiledAction = namedtuple('TiledAction', 'segment tile quality delay')
 AvailableAction = namedtuple('AvailableAction', 'segment download_tile_dict')
@@ -15,6 +16,9 @@ BANDWIDTH_TH = 0.5
 TILES_X = 8
 TILES_Y = 8
 DEFAULT_PRED_ACC = [0.75, 0.68, 0.62, 0.60, 0.57]
+
+LOG_PATH = "./log/RAM360.log"
+LOG_FLAG = False
 
 
 def str_tiled_action(self):
@@ -46,7 +50,15 @@ class RAM360(TiledAbr):
         self.update_acc_count = 0
         self.acc = None
 
+        self.log = myLog(LOG_PATH)
+
     def get_action(self):
+        if LOG_FLAG:
+            self.log.log_playhead(self.buffer.get_play_head() * 1000.)
+            self.log.log_stall_time(self.session_info.get_stall_time())
+            self.log.logger.info("bt buffer length : {}".format(
+                (self.buffer.get_buffer_depth() * 1000. - self.buffer.get_played_segment_partial()) / 1000.))
+
         # 变量更新
         first_segment = self.buffer.get_played_segments()
         first_segment_offset = self.buffer.get_played_segment_partial()
@@ -74,10 +86,6 @@ class RAM360(TiledAbr):
                 self.pred_view[segment_id] = self.session_info.get_viewport_predictor().predict_view(model_x, model_y,
                                                                                                      segment_id)
             (x_pred, y_pred) = self.pred_view[segment_id]
-            # if self.pred_view[segment_id] is not None:
-            #     (x_pred, y_pred) = self.pred_view[segment_id]
-            # else:
-            #     x_pred, y_pred = 0.5, 0.5
             tiles_in_viewport = get_tiles_in_viewport(x_pred, y_pred)  # 视窗内的tile
 
             cur_action = None

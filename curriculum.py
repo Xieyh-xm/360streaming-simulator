@@ -3,6 +3,7 @@ import random
 from sabre360_with_qoe import Session
 from utils import get_trace_file
 import numpy as np
+from myLog import myLog
 
 # ============= Config Setting =============
 default_config = {}
@@ -10,17 +11,20 @@ default_config['ewma_half_life'] = [4, 1]  # seconds
 default_config['buffer_size'] = 5  # seconds
 default_config['log_file'] = 'log/session.log'
 
-network_batch = 4
-network_dict_size = 40  # 4glogs
+network_batch = 10
+network_dict_size = 600
 network_list = range(network_dict_size)
 
-video_batch = 4
+video_batch = 1
 video_dict_size = 18
 video_list = range(video_dict_size)
 
-user_batch = 4
+user_batch = 1
 user_dict_size = 48
 user_list = range(user_dict_size)
+
+mylog = myLog(path="log/lecture.log")
+logger = mylog.get_log()
 
 
 class Curriculum:
@@ -37,20 +41,31 @@ class Curriculum:
         self.hard_pose_id = []
 
     def update_hard_env(self):
+        logger.info("update_hard_env...")
         ''' 挑选困难环境 '''
         # 1. 随机sample一些trace测试
         self.clear_hard_env()
         chosen_network, chosen_video, chosen_user = self.random_choose_trace()
+        cnt = 0
         for network_id in chosen_network:
             for video_id in chosen_video:
                 for user_id in chosen_user:
+                    cnt += 1
                     heuristic_qoe = self.test_rule_algro(network_id, video_id, user_id)
                     rl_qoe = self.test_rl_model(network_id, video_id, user_id)
                     gap = heuristic_qoe - rl_qoe  # 2. 计算gap
-                    if gap > 0:  # 3. 加入hard list
+                    if gap > 5000.:  # 3. 加入hard list
+                        logger.info(
+                            '<{}> hard env --> net : {}\t video : {}\t pose : {}\t gap = {:.3f}'.format(cnt, network_id,
+                                                                                                        video_id,
+                                                                                                        user_id, gap))
                         self.hard_network_id.append(network_id)
                         self.hard_video_id.append(video_id)
                         self.hard_pose_id.append(user_id)
+                    elif gap > 0:
+                        logger.info('<{}> rl-based model closed to heuristic rule =_='.format(cnt))
+                    else:
+                        logger.info("<{}> rl-based model better than heuristic rule (*^▽^*)".format(cnt))
         if len(self.hard_network_id) == 0:
             return False
         return True
@@ -63,7 +78,7 @@ class Curriculum:
         config['manifest'] = video_file
         config['pose_trace'] = user_file
 
-        from deep_rl.solution_curriculum import Melody
+        from deep_rl.solution_lecture import Melody
         config['abr'] = Melody
 
         session = Session(config)
@@ -83,8 +98,10 @@ class Curriculum:
         config['bandwidth_trace'] = network_file
         config['manifest'] = video_file
         config['pose_trace'] = user_file
-        from abr.RAM360 import RAM360
-        config['abr'] = RAM360
+        # from abr.RAM360 import RAM360
+        # config['abr'] = RAM360
+        from abr.TTS import TTS
+        config['abr'] = TTS
 
         session = Session(config)
         session.run()
@@ -95,6 +112,7 @@ class Curriculum:
         return qoe
 
     def random_choose_trace(self):
+        logger.info("random_choose_trace...")
         ticks = int(time.time())
         random.seed(ticks)
 
@@ -113,12 +131,12 @@ class Curriculum:
             net_id = self.hard_network_id[i]
             video_id = self.hard_video_id[i]
             pose_id = self.hard_pose_id[i]
-            state = self.env.reset(net_id, video_id, pose_id)
+            state, bw_mask = self.env.reset(net_id, video_id, pose_id)
             done = False
             while not done:
                 cnt += 1
-                action = self.ppo_agent.select_action(state)
-                state, reward, done = self.env.step(action)
+                action = self.ppo_agent.select_action(state, bw_mask)
+                state, bw_mask, reward, done = self.env.step(action)
                 sum_reward += reward
                 self.ppo_agent.buffer.rewards.append(reward)
                 self.ppo_agent.buffer.is_terminals.append(done)

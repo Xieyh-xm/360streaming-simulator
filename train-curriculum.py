@@ -4,9 +4,10 @@ import torch
 import random
 from datetime import datetime
 # from deep_rl.rl_env.rl_env import RLEnv
-from deep_rl.rl_env.rl_env_et_update import RLEnv
+from deep_rl.rl_env.rl_env_bw_mask import RLEnv
 from deep_rl.ppo import PPO
 from curriculum import Curriculum
+from myLog import myLog
 
 
 def train():
@@ -16,14 +17,14 @@ def train():
     # ============== Save Model ==============
     env_name = "lecture"
     print("Training environment name : " + env_name)
-    save_model_freq = 25  # save model frequency (in num timesteps)
+    save_model_freq = 10  # save model frequency (in num timesteps)
 
     # =============== Hyper-parameter Setting ===============
     device = torch.device('cpu')
     print("Device set to : ", device)
 
     # K_epochs = 80  # update policy for K epochs in one PPO update
-    K_epochs = 20  # update policy for K epochs in one PPO update
+    K_epochs = 40  # update policy for K epochs in one PPO update
 
     # eps_clip = 0.2  # clip parameter for PPO
     eps_clip = 0.1  # clip parameter for PPO
@@ -34,12 +35,12 @@ def train():
     # lr_critic = 0.001  # learning rate for critic network
 
     # 300轮后
-    lr_actor = 0.00002  # learning rate for actor network
-    lr_critic = 0.00005  # learning rate for critic network
+    lr_actor = 0.00003  # learning rate for actor network
+    lr_critic = 0.0001  # learning rate for critic network
 
     random_seed = 0  # set random seed if required (0 = no random seed)
 
-    net_trace = "./network/raw_trace/4Glogs"
+    net_trace = "./data_trace/network/real_trace"
     env = RLEnv(net_trace)  # creat environment
 
     state_dim = env.get_state_dim()  # state space dimension
@@ -89,11 +90,13 @@ def train():
     log_f = open(log_f_name, "w+")
     log_f.write('episode,timestep,reward\n')
 
-    time_step = 475
+    time_step = 780
     i_episode = 0
-    ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
+    # ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
+    ppo_agent.load("deep_rl/PPO_preTrained/fcc/PPO_fcc_0_900.pth")
 
     # ===========================================
+    # mylog = myLog(path="20221206-lecture.log")
     lecture = Curriculum(net_trace, ppo_agent, env)
     REPEAT_NUM = 3
     # training loop
@@ -102,6 +105,7 @@ def train():
         if not hard_flag:  # 不存在困难环境
             print("Does not exist hard environment.")
             continue
+        avg_reward = 0
         for i in range(REPEAT_NUM):
             avg_reward = lecture.curriculum_training()
         time_step += 1

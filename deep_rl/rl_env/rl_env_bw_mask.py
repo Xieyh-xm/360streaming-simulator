@@ -23,20 +23,20 @@ TILES_X = 8
 TILES_Y = 8
 BITRATE_LEVEL = 6
 
-SLEEP_PERIOD = 500  # 暂停时长 ms
+SLEEP_PERIOD = 50  # 暂停时长 ms
 
 # ============= Config Setting =============
 default_config = {}
 default_config['ewma_half_life'] = [4, 1]  # seconds
 default_config['buffer_size'] = 5  # seconds
-default_config['log_file'] = 'log/session.log'
+default_config['log_file'] = './log/session.log'
 default_config['abr'] = TestAbr  # 不调用
 
 TiledAction = namedtuple('TiledAction', 'segment tile quality delay')
 
 OUTPUT_LOG = False
 
-LOG_PATH = "log/train.log"
+LOG_PATH = "./log/train.log"
 LOG_FLAG = False
 
 
@@ -343,6 +343,7 @@ class RLEnv:
         self.state[0, 31:36] = torch.Tensor(self.acc)
 
         if LOG_FLAG:
+            self.log.log_stall_time(self.session.session_info.get_stall_time())
             self.log.log_playhead(playhead)
             self.log.log_first_et(first_et_segment)
             self.log.log_state(self.state)
@@ -569,7 +570,8 @@ class RLEnv:
             self.session.consumed_download_time = 0
             self.session.network_model.delay(delay)
             wall_time, stall_time = self.session.consume_download_time(delay, time_is_play_time=True)
-            print_debug('Stall time = {} ms'.format(stall_time))
+            # print_debug('Stall time = {} ms'.format(stall_time))
+            self.session.session_info.set_stall_time(stall_time)
             self.session.session_events.trigger_network_delay_event(delay)
 
             ''' 记录每一个播放过segment的pose trace'''
@@ -610,7 +612,8 @@ class RLEnv:
 
         ''' 模拟视频播放进程 '''
         wall_time, stall_time = self.session.consume_download_time(self.session.total_download_time)  # ms
-        print_debug('Stall time = {} ms'.format(stall_time))
+        self.session.session_info.set_stall_time(stall_time)
+        # print_debug('Stall time = {} ms'.format(stall_time))
         # todo：计算视角预测准确度
         ''' 记录每一个segment的pose trace'''
         cur_played_segment = self.session.buffer.get_played_segments()  # 正在播放的segment

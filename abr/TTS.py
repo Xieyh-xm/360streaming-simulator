@@ -7,6 +7,7 @@ import numpy as np
 from abr.TiledAbr import TiledAbr
 from utils import get_tiles_in_viewport
 from sabre360_with_qoe import SessionInfo, SessionEvents
+from myLog import myLog
 
 TiledAction = namedtuple('TiledAction', 'segment tile quality delay')
 TILES_X = 8
@@ -21,6 +22,9 @@ INTEGRATION_GAIN = 0.01
 HISTORY_LENGTH = 10  # s
 
 SLEEP_PERIOD = 500  # 暂停时长 ms
+
+LOG_FLAG = False
+LOG_PATH = './log/TTS.log'
 
 
 def str_tiled_action(self):
@@ -55,19 +59,20 @@ class TTS(TiledAbr):
         self.history_et_length = []
 
         self.last_action = None
+        self.log = myLog(LOG_PATH)
 
     def get_action(self):
         ''' TTS主逻辑'''
-        action = None
-        is_bt_download = False
-        is_et_download = False
         is_sleep = False
 
         # 更新缓冲区大小
         self.play_head = self.buffer.get_play_head() / 1000.  # s
         self.bt_buffer_length = self.buffer.get_buffer_depth() - self.buffer.get_played_segment_partial() / 1000.
         self.et_buffer_length = max(self.latest_et_segment - self.play_head, 0)
-        # print(self.et_buffer_length)
+        if LOG_FLAG:
+            self.log.log_playhead(self.play_head*1000.)
+            self.log.logger.info(
+                "bt_buffer_length : {} \tet_buffer_length : {}".format(self.bt_buffer_length, self.et_buffer_length))
 
         self.play_time.append(self.play_head)
         self.history_et_length.append(self.et_buffer_length)
@@ -82,6 +87,8 @@ class TTS(TiledAbr):
                 action.append(TiledAction(segment_id, i, 0, 0))
             # 2. 更新相关变量
             self.latest_bt_segment += 1
+            if LOG_FLAG:
+                self.log.log_bt_action(segment_id)
         elif self.et_buffer_length <= target_et_length:
             ''' 下载et层 '''
             # 确定et segment
@@ -93,6 +100,8 @@ class TTS(TiledAbr):
                 ''' 没有et segment可下载，系统空闲一段时间 '''
                 is_sleep = True
                 action = [TiledAction(0, 0, 0, SLEEP_PERIOD)]
+                if LOG_FLAG:
+                    self.log.log_sleep(SLEEP_PERIOD)
             else:
                 is_et_download = True
                 # 1. 估计未来带宽bwe
@@ -137,14 +146,17 @@ class TTS(TiledAbr):
                     action.append(TiledAction(segment_id, tile_id, choose_level, 0))
                 # 6. 更新相关变量
                 self.latest_et_segment = segment_id
+                if LOG_FLAG:
+                    self.log.log_et_action(segment_id, choose_level)
         else:
             ''' 系统空闲一段时间 '''
             is_sleep = True
             action = [TiledAction(0, 0, 0, SLEEP_PERIOD)]
+            if LOG_FLAG:
+                self.log.log_sleep(SLEEP_PERIOD)
 
         if not is_sleep:
             self.last_action = action
-        # print(action)
         return action
 
     def calculate_throughput(self):

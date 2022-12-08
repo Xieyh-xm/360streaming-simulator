@@ -4,10 +4,14 @@ import json
 import math
 import pandas as pd
 
+import sys
+
+sys.path.append("..")
+
 # Network_Root_Path = "./network/4Glogs"
 # Network_Root_Path = "./network/generate"
-Video_Root_Path = "./video/manifest"
-User_Root_Path = "./video/pose_trace"
+Video_Root_Path = "./data_trace/video/manifest"
+User_Root_Path = "./data_trace/video/pose_trace"
 
 config_file = './headset/headset_config.json'
 with open(config_file) as file:
@@ -106,21 +110,30 @@ def Pose2VideoXY(pose):
     return (video_x, video_y)
 
 
+def take_num(filename):
+    num_list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    ret = ""
+    for ele in filename:
+        if ele in num_list:
+            ret += ele
+    return int(ret)
+
+
 def get_trace_file(Network_Root_Path, network_trace_id, video_trace_id, user_trace_id):
     '''
     获取trace文件
     '''
     # network
     network_files = os.listdir(Network_Root_Path)
-    network_files.sort()
+    network_files.sort(key=take_num)
     network_trace = os.path.join(Network_Root_Path, network_files[network_trace_id])
     # video
     video_files = os.listdir(Video_Root_Path)
-    video_files.sort()
+    video_files.sort(key=take_num)
     video_trace = os.path.join(Video_Root_Path, video_files[video_trace_id])
     # user
     user_files = os.listdir(User_Root_Path + '/video_' + str(video_trace_id))
-    user_files.sort()
+    user_files.sort(key=take_num)
     user_trace = os.path.join(User_Root_Path + '/video_' + str(video_trace_id), user_files[user_trace_id])
     # print(network_trace)
     # print(video_trace)

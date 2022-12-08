@@ -61,23 +61,22 @@ class ActorCritic(nn.Module):
         if download_bit_bt == 0:
             mask[self.action_dim - 2] = 1
         else:
-            # mask[self.action_dim - 1] = 1  # todo:有可下载的bt，就不sleep
-            if bt_buffer_len < 10.0:  # bt 小于10，不sleep，可下载bt
+            mask[self.action_dim - 1] = 1  # todo:有可下载的bt，就不sleep
+            # if bt_buffer_len < 15.0:  # bt 小于10，不sleep，可下载bt
+            #     mask[self.action_dim - 1] = 1
+            #     mask[self.action_dim - 2] = 0
+            # else:  # bt 大于10，不下载bt，可sleep
+            #     mask[self.action_dim - 2] = 1
+            #     mask[self.action_dim - 1] = 0
+            if bt_buffer_len <= 4.0:  # 2. bt_buffer_len至少5个chunk
+                mask[0:self.action_dim - 2] = 1
                 mask[self.action_dim - 1] = 1
-                mask[self.action_dim - 2] = 0
-            else:  # bt 大于10，不下载bt，可sleep
-                mask[self.action_dim - 2] = 1
-                mask[self.action_dim - 1] = 0
 
         download_bit_et = state_numpy[0, 13:18]  # et待下载数据量
         for segment_id in range(5):
             if download_bit_et[segment_id] == 0:
                 mask[segment_id * bit_level_et:(segment_id + 1) * bit_level_et] = 1
         '''============================================='''
-        # print("bt_buffer_len = ", bt_buffer_len)
-        # print("download_bit_et = ", download_bit_et)
-        # print("bw_mask = ", bw_mask)
-        # print("mask = ", mask)
         print_debug("mask = ", mask)
         mask = torch.BoolTensor(mask).to(self.device)
         mask = mask.unsqueeze(0)

@@ -61,15 +61,16 @@ class ActorCritic(nn.Module):
         if download_bit_bt == 0:
             mask[self.action_dim - 2] = 1
         else:
-            # mask[self.action_dim - 1] = 1  # todo:有可下载的bt，就不sleep
-            if bt_buffer_len < 10.0:  # bt 小于10，不sleep，可下载bt
+            mask[self.action_dim - 1] = 1  # todo:有可下载的bt，就不sleep
+            # if bt_buffer_len < 10.0:  # bt 小于10，不sleep，可下载bt
+            #     mask[self.action_dim - 1] = 1
+            #     mask[self.action_dim - 2] = 0
+            # else:  # bt 大于10，不下载bt，可sleep
+            #     mask[self.action_dim - 2] = 1
+            #     mask[self.action_dim - 1] = 0
+            if bt_buffer_len <= 4.0:  # 2. bt_buffer_len至少两个chunk
+                mask[0:self.action_dim - 2] = 1
                 mask[self.action_dim - 1] = 1
-                mask[self.action_dim - 2] = 0
-            else:  # bt 大于10，不下载bt，可sleep
-                mask[self.action_dim - 2] = 1
-                mask[self.action_dim - 1] = 0
-            # if bt_buffer_len <= 2.0:  # 2. bt_buffer_len至少两个chunk
-            #     mask[0:25] = 1
 
         download_bit_et = state_numpy[0, 13:18]  # et待下载数据量
         for segment_id in range(5):
@@ -112,13 +113,17 @@ class ActorCritic(nn.Module):
             if download_bit_bt == 0:
                 mask[k, self.action_dim - 2] = 1  # 不下载bt
             else:
-                # mask[k, self.action_dim - 1] = 1  # todo: 有可下载的bt，就不sleep
-                if bt_buffer_len < 10:  # bt 小于10，不sleep，可下载bt
+                mask[k, self.action_dim - 1] = 1  # todo: 有可下载的bt，就不sleep
+                # if bt_buffer_len < 10:  # bt 小于10，不sleep，可下载bt
+                #     mask[k, self.action_dim - 1] = 1
+                #     mask[k, self.action_dim - 2] = 0
+                # else:  # bt 大于10，不下载bt，可sleep
+                #     mask[k, self.action_dim - 2] = 1
+                #     mask[k, self.action_dim - 1] = 0
+
+                if bt_buffer_len <= 4.0:  # 2. bt_buffer_len至少两个chunk
+                    mask[k, 0:self.action_dim - 2] = 1
                     mask[k, self.action_dim - 1] = 1
-                    mask[k, self.action_dim - 2] = 0
-                else:  # bt 大于10，不下载bt，可sleep
-                    mask[k, self.action_dim - 2] = 1
-                    mask[k, self.action_dim - 1] = 0
 
             download_bit_et = state_numpy[k, 13:18]  # et待下载数据量
             for segment_id in range(5):

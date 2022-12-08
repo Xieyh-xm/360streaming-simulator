@@ -234,6 +234,7 @@ class SessionInfo:
         self.presentation_time = 0
         self.total_download_time = 0
         self.prev_pose_trace = prev_pose_trace
+        self.stall_time = 0
 
     def set_throughput_estimator(self, throughput_estimator):
         self.throughput_estimator = throughput_estimator
@@ -279,6 +280,12 @@ class SessionInfo:
 
     def get_prev_pose_trace(self):
         return self.prev_pose_trace
+
+    def set_stall_time(self, time):
+        self.stall_time = time
+
+    def get_stall_time(self):
+        return self.stall_time
 
 
 class SessionEvents:
@@ -1067,7 +1074,7 @@ class Session:
 
                 ''' 模拟视频播放进程 '''
                 wall_time, stall_time = self.consume_download_time(delay, time_is_play_time=True)
-
+                self.session_info.set_stall_time(stall_time)
                 ''' 网络模拟delay '''
                 self.session_events.trigger_network_delay_event(delay)
 
@@ -1107,6 +1114,7 @@ class Session:
             ''' 模拟视频播放进程 '''
             wall_time, stall_time = self.consume_download_time(self.total_download_time)
 
+            self.session_info.set_stall_time(stall_time)
             ''' 记录每一个segment的pose trace'''
             cur_played_segment = self.buffer.get_played_segments()  # 正在播放的segment
             if self.buffer.get_played_segment_partial() == 0:  # 尚未开始播放

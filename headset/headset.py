@@ -1,8 +1,10 @@
 import sys
 import json
 import math
+import sys
 
-config_file = 'headset/headset_config.json'
+sys.path.append("..")
+config_file = './headset/headset_config.json'
 
 with open(config_file) as file:
     obj = json.load(file)

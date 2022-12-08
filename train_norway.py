@@ -39,7 +39,7 @@ def train():
     random_seed = 0  # set random seed if required (0 = no random seed)
 
     # net_trace = "./network/real_trace"
-    net_trace = "./network/norway-scaling"
+    net_trace = "./data_trace/network/norway-scaling"
     # net_trace = "./network/generate"
     env = RLEnv(net_trace)  # creat environment
 
@@ -91,12 +91,12 @@ def train():
     log_f.write('episode,timestep,reward\n')
 
     # todo: set up time_step
-    time_step = 750
+    time_step = 770
     i_episode = 0
     ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
 
     # =============== 随机化trace ===============
-    network_batch = 5
+    network_batch = 10
     # network_dict_size = 240  # generate 240
     # network_dict_size = 600   # real_trace
     # network_dict_size = 290  # fcc 290

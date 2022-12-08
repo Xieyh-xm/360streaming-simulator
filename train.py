@@ -5,8 +5,8 @@ import random
 from datetime import datetime
 # from deep_rl.rl_env.rl_env import RLEnv
 from deep_rl.rl_env.rl_env_bw_mask import RLEnv
-from deep_rl.ppo import PPO
-# from deep_rl.ppo_test import PPO
+# from deep_rl.ppo import PPO
+from deep_rl.ppo_test import PPO
 
 
 def train():
@@ -14,7 +14,7 @@ def train():
     max_training_timesteps = int(3e6)  # break training loop if timeteps > max_training_timesteps
 
     # ============== Save Model ==============
-    env_name = "fcc"
+    env_name = "norway"
     print("Training environment name : " + env_name)
     save_model_freq = 10  # save model frequency (in num timesteps)
 
@@ -40,7 +40,7 @@ def train():
     random_seed = 0  # set random seed if required (0 = no random seed)
 
     # net_trace = "./network/real_trace"
-    net_trace = "./network/fcc-scaling"
+    net_trace = "./data_trace/network/norway-scaling"
     # net_trace = "./network/generate"
     env = RLEnv(net_trace)  # creat environment
 
@@ -92,16 +92,16 @@ def train():
     log_f.write('episode,timestep,reward\n')
 
     # todo: set up time_step
-    time_step = 740
+    time_step = 750
     i_episode = 0
-    ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
+    ppo_agent.load("deep_rl/PPO_preTrained/lecture/PPO_lecture_0_760.pth")
 
     # =============== 随机化trace ===============
     network_batch = 5
     # network_dict_size = 240  # generate 240
     # network_dict_size = 600   # real_trace
-    network_dict_size = 290  # fcc 290
-    # network_dict_size = 310  # norway 310
+    # network_dict_size = 290  # fcc 290
+    network_dict_size = 310  # norway 310
     network_list = range(network_dict_size)
 
     video_batch = 2
@@ -113,7 +113,7 @@ def train():
     user_list = range(user_dict_size)
     # ===========================================
     # train
-    state, bw_mask = env.reset(1, 1, 1)
+    state, bw_mask = env.reset(8, 2, 2)
     done = False
     cnt = 0
     cur_ep_reward = 0

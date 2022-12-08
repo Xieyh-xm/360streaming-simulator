@@ -17,7 +17,7 @@ TILES_Y = 8
 BITRATE_LEVEL = 6
 
 ''' 算法超参数设置 '''
-SLEEP_PERIOD = 500  # 暂停时长 ms
+SLEEP_PERIOD = 100  # 暂停时长 ms
 TPUT_HISTORY_LEN = 10  # 历史吞吐量
 MAX_ET_LEN = 5  # 最大的ET buffer长度 s
 
@@ -26,8 +26,9 @@ STATE_DIMENSION = 36
 HISTORY_LENGTH = 1
 ACTION_DIMENSION = 27
 # NN_MODEL = "deep_rl/model/PPO_et_update_0_650.pth"
-# NN_MODEL = "deep_rl/PPO_preTrained/fcc/PPO_fcc_0_740.pth"
-NN_MODEL = "deep_rl/PPO_preTrained/norway/PPO_norway_0_750.pth"
+NN_MODEL = "deep_rl/PPO_preTrained/lecture/PPO_lecture_0_830.pth"
+# NN_MODEL = "deep_rl/PPO_preTrained/norway/PPO_norway_0_850.pth"
+# NN_MODEL = "deep_rl/PPO_preTrained/norway/PPO_norway_0_760.pth"
 lr_actor = 0.0003  # learning rate for actor network
 lr_critic = 0.001  # learning rate for critic network
 K_epochs = 80  # update policy for K epochs in one PPO update
@@ -155,6 +156,7 @@ class Melody(TiledAbr):
         if LOG_FLAG:
             self.log.log_playhead(playhead)
             self.log.log_first_et(first_et_segment)
+            self.log.log_stall_time(self.session_info.get_stall_time())
 
         segment_depth = self.buffer.get_buffer_depth()
         self.contents = {}  # 每个segment内的tile信息，未被下载的是None
