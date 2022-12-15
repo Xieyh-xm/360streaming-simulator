@@ -95,13 +95,15 @@ class TestPrediction(ViewportPrediction):
             return None, None
         # 确定预测起点
         index = 0
-        while history_pose[index][0] < start_time:
+        while index < len(history_pose) and history_pose[index][0] < start_time:
             index += 1
         start_index = index
         # 确定预测终点
         while index < len(history_pose) and history_pose[index][0] < end_time:
             index += 1
         end_index = index
+        if start_index == end_index:
+            return None, None
         # 取出用于预测的数据并调整
         play_time = history_pose[start_index:end_index + 1, 0]
         head_x = history_pose[start_index:end_index + 1, 1]

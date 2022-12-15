@@ -10,8 +10,8 @@ DEFAULT_LATENCY = 20.
 class NetworkTrace:
     ''' used for json file '''
 
-    def __init__(self, filename):
-        self.file_path = filename
+    def __init__(self, filepath):
+        self.file_path = filepath
         self.play_duration = []  # ms
         self.bandwidth = []  # kbps
         self.latency = []  # ms
@@ -39,10 +39,7 @@ class NetworkTrace:
         for i in range(len(self.bandwidth)):
             self.bandwidth[i] *= ratio
 
-    def save_trace(self, new_info):
-        new_filename = self.filename[:-5] + '_' + new_info + '.json'
-        print(new_filename)
-        new_path = NEW_PATH + new_filename
+    def save_trace(self, new_path):
         print("saving to {}".format(new_path))
         with open(new_path, 'w') as output_file:
             # todo:写入json文件
@@ -129,6 +126,7 @@ def Genet_to_json(path):
 
 
 def trace2json(orgin):
+    ''' 将已有trace转换为json格式 '''
     file_list = os.listdir(RAW_PATH)
     file_list.sort()
     for filename in file_list:
@@ -142,6 +140,7 @@ def trace2json(orgin):
 
 
 def resize_json_trace(target_bw):
+    ''' 按照目标平均码率缩放json trace '''
     file_list = os.listdir(RAW_PATH)
     file_list.sort()
     for filename in file_list:
@@ -150,15 +149,56 @@ def resize_json_trace(target_bw):
         trace = NetworkTrace(filename)
         trace.read_trace()
         trace.scale_bw_avg(target_bw)
-        trace.save_trace(new_info=str(target_bw) + "kbps")
+        trace.save_trace(NEW_PATH, new_info=str(target_bw) + "kbps")
 
 
-def main():
-    resize_json_trace(target_bw=9000)  # kbps
-    # trace2json(orgin="Genet")
+def take_num(filename):
+    num_list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    ret = ""
+    for ele in filename:
+        if ele in num_list:
+            ret += ele
+    return int(ret)
+
+
+def trace_classify():
+    ''' 按照方差对trace进行分类 '''
+    # # 1. 计算每个trace的方差
+    # ROOT_PATH = "../data_trace/network/real_trace"
+    # trace_name = os.listdir(ROOT_PATH)
+    # trace_name.sort(key=take_num)
+    # std_dict = {}  # 和trace_name一一对应
+    # for filename in trace_name:
+    #     path = os.path.join(ROOT_PATH, filename)
+    #     trace = NetworkTrace(path)
+    #     std_dict[filename] = trace.get_bw_std()
+    #
+    # # 2. 字典按值排序
+    # trace_tuple = sorted(std_dict.items(), key=lambda x: x[1])
+    # print(trace_tuple)
+    #
+    # # 3. 按顺序写入新的目录下
+    # NEW_ROOT_PATH = "../data_trace/network/sorted_trace"
+    # for i, ele in enumerate(trace_tuple):
+    #     old_filename = ele[0]
+    #     new_filename = "sorted_trace_{}.json".format(i)
+    #     print(os.path.join(NEW_ROOT_PATH, new_filename))
+    #     trace = NetworkTrace(os.path.join(ROOT_PATH, old_filename))
+    #     trace.save_trace(os.path.join(NEW_ROOT_PATH, new_filename))
+
+    # 4. 打印方差
+    NEW_ROOT_PATH = "../data_trace/network/sorted_trace"
+    sorted_trace = os.listdir(NEW_ROOT_PATH)
+    sorted_trace.sort(key=take_num)
+    for filename in sorted_trace:
+        path = os.path.join(NEW_ROOT_PATH, filename)
+        trace = NetworkTrace(path)
+        print("filename : {}\t std = {}".format(filename, trace.get_bw_std()))
 
 
 RAW_PATH = "../data_trace/network/norway-scaling/"
 NEW_PATH = "../network/norway-9M/"
 if __name__ == '__main__':
-    main()
+    # resize_json_trace(target_bw=9000)  # kbps
+    # trace2json(orgin="Genet")
+    trace_classify()

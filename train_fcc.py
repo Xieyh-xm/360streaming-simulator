@@ -13,7 +13,7 @@ def train():
     max_training_timesteps = int(3e6)  # break training loop if timeteps > max_training_timesteps
 
     # ============== Save Model ==============
-    env_name = "fcc"
+    env_name = "non lecture"
     print("Training environment name : " + env_name)
     save_model_freq = 10  # save model frequency (in num timesteps)
 
@@ -21,26 +21,26 @@ def train():
     device = torch.device('cpu')
     print("Device set to : ", device)
 
-    # K_epochs = 80  # update policy for K epochs in one PPO update
-    K_epochs = 40  # update policy for K epochs in one PPO update
+    K_epochs = 80  # update policy for K epochs in one PPO update
+    # K_epochs = 40  # update policy for K epochs in one PPO update
 
     # eps_clip = 0.2  # clip parameter for PPO
     eps_clip = 0.1  # clip parameter for PPO
-    gamma = 0.95  # discount factor
+    gamma = 0.98  # discount factor
 
     # 起始300轮
-    # lr_actor = 0.0003  # learning rate for actor network
-    # lr_critic = 0.001  # learning rate for critic network
-
-    # 300轮后
     lr_actor = 0.00003  # learning rate for actor network
     lr_critic = 0.0001  # learning rate for critic network
+
+    # 300轮后
+    # lr_actor = 0.00003  # learning rate for actor network
+    # lr_critic = 0.0001  # learning rate for critic network
 
     random_seed = 0  # set random seed if required (0 = no random seed)
 
     # net_trace = "./network/real_trace"
-    net_trace = "./data_trace/network/fcc-scaling"
-    # net_trace = "./network/generate"
+    # net_trace = "./data_trace/network/fcc-scaling"
+    net_trace = "./data_trace/network/real_trace"
     env = RLEnv(net_trace)  # creat environment
 
     state_dim = env.get_state_dim()  # state space dimension
@@ -91,16 +91,16 @@ def train():
     log_f.write('episode,timestep,reward\n')
 
     # todo: set up time_step
-    time_step = 850
+    time_step = 180
     i_episode = 0
-    # ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
-    ppo_agent.load("deep_rl/PPO_preTrained/norway/PPO_norway_0_850.pth")
+    ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
+    # ppo_agent.load("deep_rl/PPO_preTrained/norway/PPO_norway_0_850.pth")
 
     # =============== 随机化trace ===============
     network_batch = 8
     # network_dict_size = 240  # generate 240
     # network_dict_size = 600   # real_trace
-    network_dict_size = 290  # fcc 290
+    network_dict_size = 600  # fcc 290
     # network_dict_size = 310  # norway 310
     network_list = range(network_dict_size)
 
@@ -125,7 +125,7 @@ def train():
             for video_id in random.sample(video_list, video_batch):
                 for user_id in random.sample(user_list, user_batch):
                     state, bw_mask = env.reset(net_id, video_id, user_id)
-                    # state, bw_mask = env.reset(1, 1, 1)
+                    # state, bw_mask = env.reset(1, 2, 2)
                     session_num += 1
                     done = False
                     while not done:

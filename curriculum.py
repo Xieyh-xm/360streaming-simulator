@@ -11,20 +11,22 @@ default_config['ewma_half_life'] = [4, 1]  # seconds
 default_config['buffer_size'] = 5  # seconds
 default_config['log_file'] = 'log/session.log'
 
-network_batch = 10
+network_batch = 5
 network_dict_size = 600
 network_list = range(network_dict_size)
 
-video_batch = 1
+video_batch = 4
 video_dict_size = 18
 video_list = range(video_dict_size)
 
-user_batch = 1
+user_batch = 4
 user_dict_size = 48
 user_list = range(user_dict_size)
 
 mylog = myLog(path="log/lecture.log")
 logger = mylog.get_log()
+
+MAX_ENV = 30
 
 
 class Curriculum:
@@ -39,12 +41,12 @@ class Curriculum:
         self.hard_network_id = []
         self.hard_video_id = []
         self.hard_pose_id = []
+        self.cnt = 0
 
     def update_hard_env(self):
         logger.info("update_hard_env...")
         ''' 挑选困难环境 '''
         # 1. 随机sample一些trace测试
-        self.clear_hard_env()
         chosen_network, chosen_video, chosen_user = self.random_choose_trace()
         cnt = 0
         for network_id in chosen_network:
@@ -55,17 +57,19 @@ class Curriculum:
                     rl_qoe = self.test_rl_model(network_id, video_id, user_id)
                     gap = heuristic_qoe - rl_qoe  # 2. 计算gap
                     if gap > 5000.:  # 3. 加入hard list
-                        logger.info(
-                            '<{}> hard env --> net : {}\t video : {}\t pose : {}\t gap = {:.3f}'.format(cnt, network_id,
-                                                                                                        video_id,
-                                                                                                        user_id, gap))
+                        # logger.info(
+                        #     '<{}> hard env --> net : {}\t video : {}\t pose : {}\t gap = {:.3f}'.format(cnt, network_id,
+                        #                                                                                 video_id,
+                        #                                                                                 user_id, gap))
+                        if len(self.hard_network_id) >= MAX_ENV:
+                            self.pop_env()
                         self.hard_network_id.append(network_id)
                         self.hard_video_id.append(video_id)
                         self.hard_pose_id.append(user_id)
-                    elif gap > 0:
-                        logger.info('<{}> rl-based model closed to heuristic rule =_='.format(cnt))
-                    else:
-                        logger.info("<{}> rl-based model better than heuristic rule (*^▽^*)".format(cnt))
+                    # elif gap > 0:
+                    #     logger.info('<{}> rl-based model closed to heuristic rule =_='.format(cnt))
+                    # else:
+                    #     logger.info("<{}> rl-based model better than heuristic rule (*^▽^*)".format(cnt))
         if len(self.hard_network_id) == 0:
             return False
         return True
@@ -98,10 +102,10 @@ class Curriculum:
         config['bandwidth_trace'] = network_file
         config['manifest'] = video_file
         config['pose_trace'] = user_file
-        # from abr.RAM360 import RAM360
-        # config['abr'] = RAM360
-        from abr.TTS import TTS
-        config['abr'] = TTS
+        from abr.RAM360 import RAM360
+        config['abr'] = RAM360
+        # from abr.TTS import TTS
+        # config['abr'] = TTS
 
         session = Session(config)
         session.run()
@@ -148,3 +152,8 @@ class Curriculum:
         self.hard_network_id.clear()
         self.hard_video_id.clear()
         self.hard_pose_id.clear()
+
+    def pop_env(self):
+        self.hard_network_id.pop(0)
+        self.hard_pose_id.pop(0)
+        self.hard_video_id.pop(0)

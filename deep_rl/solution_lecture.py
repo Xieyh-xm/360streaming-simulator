@@ -17,7 +17,7 @@ TILES_Y = 8
 BITRATE_LEVEL = 6
 
 ''' 算法超参数设置 '''
-SLEEP_PERIOD = 500  # 暂停时长 ms
+SLEEP_PERIOD = 100  # 暂停时长 ms
 TPUT_HISTORY_LEN = 10  # 历史吞吐量
 MAX_ET_LEN = 5  # 最大的ET buffer长度 s
 
@@ -362,7 +362,7 @@ class Melody(TiledAbr):
         self.pred_tiles_dict = {}
         for seg_idx in range(first_segment, end_segment_idx + 1):
             x_pred = pred_view_dict[seg_idx][0]
-            y_pred = pred_view_dict[seg_idx][0]
+            y_pred = pred_view_dict[seg_idx][1]
             tiles_in_viewport = get_tiles_in_viewport(x_pred, y_pred)
             self.pred_tiles_dict[seg_idx] = tiles_in_viewport
 

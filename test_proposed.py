@@ -10,7 +10,9 @@ from tqdm import tqdm
 # net = "4g-logs"
 # net = "4g-scaling"
 # net = "fcc-scaling"
-net = "norway-scaling"
+# net = "norway-scaling"
+# net = "fcc-test"
+net = "norway-test"
 if net == "fcc-scaling":
     net_trace = "./data_trace/network/fcc-scaling"
     NETWORK_TRACE_NUM = 290
@@ -29,6 +31,12 @@ elif net == "fcc-9M":
 elif net == "norway-9M":
     net_trace = "./data_trace/network/norway-9M"
     NETWORK_TRACE_NUM = 310
+elif net == "norway-test":
+    net_trace = "./data_trace/network/norway-test"
+    NETWORK_TRACE_NUM = 20
+elif net == "fcc-test":
+    net_trace = "./data_trace/network/fcc-test"
+    NETWORK_TRACE_NUM = 20
 
 VIDEO_TRACE_NUM = 18
 USER_TRACE_NUM = 48
@@ -104,5 +112,5 @@ def test_network_samples(network_batch=NETWORK_TRACE_NUM, video_batch=VIDEO_TRAC
 
 random.seed(10)
 if __name__ == '__main__':
-    test_network_samples(network_batch=10, video_batch=4, user_batch=5)
-    # test(64, 2, 2)
+    test_network_samples(network_batch=20, video_batch=4, user_batch=5)
+    # test(4, 2, 2)

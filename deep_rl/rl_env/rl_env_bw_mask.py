@@ -265,8 +265,8 @@ class RLEnv:
 
         if not is_sleep:  # 仅在不暂停下载时更新
             self.update_throughput(action)
-        self.update_buffer_length(action, is_BT_download, first_et_segment)
         self.update_viewport_pred(first_segment, first_et_segment)
+        self.update_buffer_length(action, is_BT_download, first_et_segment)
         future_size_in_BT, future_size_in_ET, tile_num_in_ET = self.update_download_size(first_et_segment)
         self.update_avg_level(first_segment, first_et_segment, self.contents)
 
@@ -383,8 +383,9 @@ class RLEnv:
             contents = self.session.buffer.get_buffer_contents(segment_id)
             if contents is None:
                 continue
-            for tile_level in contents:
-                if tile_level is not None and tile_level > 0:
+            for idx, tile_level in enumerate(contents):
+                tile_list = self.pred_tiles_dict[segment_id]
+                if tile_level is not None and tile_level > 0 and idx in tile_list:
                     self.enhance_buffer_depth += 1
                     break
         assert self.enhance_buffer_depth <= MAX_ET_LEN
@@ -408,7 +409,7 @@ class RLEnv:
         self.pred_tiles_dict = {}
         for seg_idx in range(first_segment, end_segment_idx + 1):
             x_pred = pred_view_dict[seg_idx][0]
-            y_pred = pred_view_dict[seg_idx][0]
+            y_pred = pred_view_dict[seg_idx][1]
             tiles_in_viewport = get_tiles_in_viewport(x_pred, y_pred)
             self.pred_tiles_dict[seg_idx] = tiles_in_viewport
 
@@ -671,6 +672,7 @@ class RLEnv:
         #     weight = acc[index]
 
         reward = 1.0 * delta_quality - 5. * stall_time - 0.1 * delta_var_space - 0.1 * delta_var_time - 0.20 * bandwidth_wastage / 10.
+        # reward = 1.0 * delta_quality - 5. * stall_time - 0.1 * delta_var_space - 0.1 * delta_var_time
         print_debug("reward = {}\n".format(reward))
 
         # self.session.qoe_one_step = delta_quality / 8 - 1.85 * stall_time - 0.5 * delta_var_space - 1 * delta_var_time - 0.5 * bandwidth_usage / 8

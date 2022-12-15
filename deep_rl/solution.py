@@ -26,7 +26,7 @@ STATE_DIMENSION = 36
 HISTORY_LENGTH = 1
 ACTION_DIMENSION = 27
 # NN_MODEL = "deep_rl/model/PPO_et_update_0_650.pth"
-NN_MODEL = "deep_rl/PPO_preTrained/lecture/PPO_lecture_0_830.pth"
+NN_MODEL = "deep_rl/PPO_preTrained/init/PPO_init_0_1200.pth"
 # NN_MODEL = "deep_rl/PPO_preTrained/norway/PPO_norway_0_850.pth"
 # NN_MODEL = "deep_rl/PPO_preTrained/norway/PPO_norway_0_760.pth"
 lr_actor = 0.0003  # learning rate for actor network
@@ -166,8 +166,8 @@ class Melody(TiledAbr):
 
         if not self.is_sleep:
             self.update_throughput(self.last_action)  # 更新过去k时刻吞吐量
-        self.update_buffer_length(self.last_action, self.is_BT_download, first_et_segment)  # 更新缓冲区长度
         self.update_viewport_pred(first_segment, first_et_segment)  # 更新实时的视角预测结果
+        self.update_buffer_length(self.last_action, self.is_BT_download, first_et_segment)  # 更新缓冲区长度
         future_size_in_BT, future_size_in_ET, tile_num_in_ET = self.update_download_size(first_et_segment)  # 更新待下载的数据量
         self.update_avg_level(first_segment, first_et_segment, self.contents)  # 更新平均码率等级
 
@@ -336,8 +336,9 @@ class Melody(TiledAbr):
             contents = self.buffer.get_buffer_contents(segment_id)
             if contents is None:
                 continue
-            for tile_level in contents:
-                if tile_level is not None and tile_level > 0:
+            tile_list = self.pred_tiles_dict[segment_id]
+            for idx, tile_level in enumerate(contents):
+                if tile_level is not None and tile_level > 0 and idx in tile_list:
                     self.enhance_buffer_depth += 1
                     break
         assert self.enhance_buffer_depth <= MAX_ET_LEN
@@ -357,11 +358,12 @@ class Melody(TiledAbr):
                 pred_view = self.session_info.get_viewport_predictor().predict_view(model_x, model_y, seg_idx)
                 (x_pred, y_pred) = pred_view
                 pred_view_dict[seg_idx] = [x_pred, y_pred]
+
         # 2 根据预测结果确定视窗内的tile
         self.pred_tiles_dict = {}
         for seg_idx in range(first_segment, end_segment_idx + 1):
             x_pred = pred_view_dict[seg_idx][0]
-            y_pred = pred_view_dict[seg_idx][0]
+            y_pred = pred_view_dict[seg_idx][1]
             tiles_in_viewport = get_tiles_in_viewport(x_pred, y_pred)
             self.pred_tiles_dict[seg_idx] = tiles_in_viewport
 

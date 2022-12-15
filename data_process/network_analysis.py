@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from network_process import NetworkTrace
 
-NETWORK_PATH = "../data_trace/network/fcc-scaling"
+NETWORK_PATH = "../data_trace/network/raw_trace/fcc"
 
 
 # NETWORK_PATH = "../data_trace/network/norway-scaling"
@@ -38,7 +38,7 @@ def show_bw_info():
     avg_std = sum_std / len(file_list)
     print("avg_std = {}".format(avg_std))
     data_frame = pd.DataFrame({'bw_avg': avg, 'bw_std': std})
-    data_frame.to_csv("fcc-scaling.csv", index=True, sep=',')
+    data_frame.to_csv("fcc.csv", index=True, sep=',')
 
 
 def show_trace():
@@ -59,5 +59,5 @@ def show_trace():
 
 
 if __name__ == '__main__':
-    # show_bw_info()
-    show_trace()
+    show_bw_info()
+    # show_trace()

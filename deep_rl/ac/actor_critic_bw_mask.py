@@ -21,6 +21,8 @@ class ActorCritic(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 128),
             nn.ReLU(),
+            nn.Linear(128, 128),    # add
+            nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
             nn.Linear(64, action_dim),
@@ -33,6 +35,8 @@ class ActorCritic(nn.Module):
             nn.Linear(state_dim, 128),
             nn.ReLU(),
             nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, 128),  # add
             nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
@@ -68,6 +72,7 @@ class ActorCritic(nn.Module):
             # else:  # bt 大于10，不下载bt，可sleep
             #     mask[self.action_dim - 2] = 1
             #     mask[self.action_dim - 1] = 0
+
             if bt_buffer_len <= 4.0:  # 2. bt_buffer_len至少两个chunk
                 mask[0:self.action_dim - 2] = 1
                 mask[self.action_dim - 1] = 1

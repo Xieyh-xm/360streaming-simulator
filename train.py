@@ -40,7 +40,7 @@ def train():
     random_seed = 0  # set random seed if required (0 = no random seed)
 
     # net_trace = "./network/real_trace"
-    net_trace = "./data_trace/network/norway-scaling"
+    net_trace = "./data_trace/network/norway-test"
     # net_trace = "./network/generate"
     env = RLEnv(net_trace)  # creat environment
 
@@ -94,7 +94,7 @@ def train():
     # todo: set up time_step
     time_step = 750
     i_episode = 0
-    ppo_agent.load("deep_rl/PPO_preTrained/lecture/PPO_lecture_0_760.pth")
+    ppo_agent.load("deep_rl/PPO_preTrained/init/PPO_init_0_1325.pth")
 
     # =============== 随机化trace ===============
     network_batch = 5
@@ -113,7 +113,7 @@ def train():
     user_list = range(user_dict_size)
     # ===========================================
     # train
-    state, bw_mask = env.reset(8, 2, 2)
+    state, bw_mask = env.reset(4, 2, 2)
     done = False
     cnt = 0
     cur_ep_reward = 0

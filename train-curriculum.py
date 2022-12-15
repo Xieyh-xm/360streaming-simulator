@@ -24,11 +24,11 @@ def train():
     print("Device set to : ", device)
 
     # K_epochs = 80  # update policy for K epochs in one PPO update
-    K_epochs = 40  # update policy for K epochs in one PPO update
+    K_epochs = 10  # update policy for K epochs in one PPO update
 
     # eps_clip = 0.2  # clip parameter for PPO
     eps_clip = 0.1  # clip parameter for PPO
-    gamma = 0.95  # discount factor
+    gamma = 0.98  # discount factor
 
     # 起始300轮
     # lr_actor = 0.0003  # learning rate for actor network
@@ -90,15 +90,15 @@ def train():
     log_f = open(log_f_name, "w+")
     log_f.write('episode,timestep,reward\n')
 
-    time_step = 780
+    time_step = 1250
     i_episode = 0
     # ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
-    ppo_agent.load("deep_rl/PPO_preTrained/fcc/PPO_fcc_0_900.pth")
+    ppo_agent.load("deep_rl/PPO_preTrained/lecture/PPO_lecture_0_1250.pth")
 
     # ===========================================
     # mylog = myLog(path="20221206-lecture.log")
     lecture = Curriculum(net_trace, ppo_agent, env)
-    REPEAT_NUM = 3
+    REPEAT_NUM = 5
     # training loop
     while time_step <= max_training_timesteps:
         hard_flag = lecture.update_hard_env()
