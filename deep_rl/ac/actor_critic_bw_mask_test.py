@@ -57,6 +57,7 @@ class ActorCritic(nn.Module):
         # et_buffer_len = math.floor(state_numpy[0, 11])  # et层
         # mask[(et_buffer_len + 1) * bit_level_et:25] = 1
         # todo 3. 不对播放前来不及下载完成的segment进行ET层下载。
+        ''' 测试掩蔽规则 '''
         for i in range(len(bw_mask)):
             mask[i] = max(bw_mask[i], mask[i])
 
@@ -73,6 +74,8 @@ class ActorCritic(nn.Module):
             #     mask[self.action_dim - 2] = 1
             #     mask[self.action_dim - 1] = 0
             #
+            ''' 测试掩蔽规则 '''
+            # default 4.0
             if bt_buffer_len <= 4.0:  # 2. bt_buffer_len至少5个chunk
                 mask[0:self.action_dim - 2] = 1
                 mask[self.action_dim - 1] = 1

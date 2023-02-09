@@ -24,10 +24,10 @@ def train():
     print("Device set to : ", device)
 
     # K_epochs = 80  # update policy for K epochs in one PPO update
-    K_epochs = 10  # update policy for K epochs in one PPO update
+    K_epochs = 40  # update policy for K epochs in one PPO update
 
     # eps_clip = 0.2  # clip parameter for PPO
-    eps_clip = 0.1  # clip parameter for PPO
+    eps_clip = 0.2  # clip parameter for PPO
     gamma = 0.98  # discount factor
 
     # 起始300轮
@@ -35,8 +35,8 @@ def train():
     # lr_critic = 0.001  # learning rate for critic network
 
     # 300轮后
-    lr_actor = 0.00003  # learning rate for actor network
-    lr_critic = 0.0001  # learning rate for critic network
+    lr_actor = 0.00001  # learning rate for actor network
+    lr_critic = 0.00003  # learning rate for critic network
 
     random_seed = 0  # set random seed if required (0 = no random seed)
 
@@ -90,10 +90,10 @@ def train():
     log_f = open(log_f_name, "w+")
     log_f.write('episode,timestep,reward\n')
 
-    time_step = 1250
+    time_step = 1420
     i_episode = 0
     # ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
-    ppo_agent.load("deep_rl/PPO_preTrained/lecture/PPO_lecture_0_1250.pth")
+    ppo_agent.load("deep_rl/PPO_preTrained/lecture/PPO_lecture_0_1420.pth")
 
     # ===========================================
     # mylog = myLog(path="20221206-lecture.log")

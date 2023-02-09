@@ -53,10 +53,11 @@ class Curriculum:
             for video_id in chosen_video:
                 for user_id in chosen_user:
                     cnt += 1
-                    heuristic_qoe = self.test_rule_algro(network_id, video_id, user_id)
+                    RAM360_qoe = self.test_RAM360(network_id, video_id, user_id)
+                    TTS_qoe = self.test_TTS(network_id, video_id, user_id)
                     rl_qoe = self.test_rl_model(network_id, video_id, user_id)
-                    gap = heuristic_qoe - rl_qoe  # 2. 计算gap
-                    if gap > 5000.:  # 3. 加入hard list
+                    gap = max(RAM360_qoe, TTS_qoe) - rl_qoe  # 2. 计算gap
+                    if gap > 0:  # 3. 加入hard list
                         # logger.info(
                         #     '<{}> hard env --> net : {}\t video : {}\t pose : {}\t gap = {:.3f}'.format(cnt, network_id,
                         #                                                                                 video_id,
@@ -92,7 +93,7 @@ class Curriculum:
         qoe = metrics[1]
         return qoe
 
-    def test_rule_algro(self, network_id, video_id, user_id):
+    def test_RAM360(self, network_id, video_id, user_id):
         ''' 测试启发式，返回平均 qoe '''
         if self.rule_qoe[network_id, video_id, user_id] != 0:
             return self.rule_qoe[network_id, video_id, user_id]
@@ -106,6 +107,29 @@ class Curriculum:
         config['abr'] = RAM360
         # from abr.TTS import TTS
         # config['abr'] = TTS
+
+        session = Session(config)
+        session.run()
+        metrics = session.get_total_metrics()
+
+        qoe = metrics[1]
+        self.rule_qoe[network_id, video_id, user_id] = qoe
+        return qoe
+
+    def test_TTS(self, network_id, video_id, user_id):
+        ''' 测试启发式，返回平均 qoe '''
+        if self.rule_qoe[network_id, video_id, user_id] != 0:
+            return self.rule_qoe[network_id, video_id, user_id]
+
+        config = default_config.copy()
+        network_file, video_file, user_file = get_trace_file(self.net_trace, network_id, video_id, user_id)
+        config['bandwidth_trace'] = network_file
+        config['manifest'] = video_file
+        config['pose_trace'] = user_file
+        # from abr.RAM360 import RAM360
+        # config['abr'] = RAM360
+        from abr.TTS import TTS
+        config['abr'] = TTS
 
         session = Session(config)
         session.run()

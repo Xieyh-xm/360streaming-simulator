@@ -33,7 +33,7 @@ class ERP(TiledAbr):
 
     def get_action(self):
         ''' 下载低质量全画幅的内容 '''
-        max_seg_idx = len(self.video_size)
+        max_seg_idx = len(self.video_size)-1
         self.latest_seg += 1
         self.latest_seg = min(self.latest_seg, max_seg_idx + 1)
         if self.latest_seg > max_seg_idx:

@@ -1,9 +1,12 @@
 ''' 用于测试的程序 '''
 import random
 import numpy as np
-from utils import get_trace_file, print_metrics, print_to_csv
+from utils import get_trace_file, print_metrics, print_to_csv, create_csv
 from sabre360_with_qoe import Session
 from tqdm import tqdm
+
+# csv_file_path = "./test_result/Proposed_Norway.csv"
+csv_file_path = "./test_result/Proposed_FCC_ram360.csv"
 
 # net = "norway-9M"
 # net = "fcc-9M"
@@ -11,8 +14,8 @@ from tqdm import tqdm
 # net = "4g-scaling"
 # net = "fcc-scaling"
 # net = "norway-scaling"
-# net = "fcc-test"
-net = "norway-test"
+net = "fcc-test"
+# net = "norway-test"
 if net == "fcc-scaling":
     net_trace = "./data_trace/network/fcc-scaling"
     NETWORK_TRACE_NUM = 290
@@ -79,6 +82,7 @@ def test(net_id, video_id, user_id):
     session.run()
     avgs = session.get_total_metrics()
     # print_metrics(avgs)
+    print_to_csv(csv_file_path, avgs)
     return avgs
 
 
@@ -107,10 +111,11 @@ def test_network_samples(network_batch=NETWORK_TRACE_NUM, video_batch=VIDEO_TRAC
         avgs += test_video_samples(net_id, video_batch, user_batch)
     avgs /= network_batch
     print_metrics(avgs)
-    print_to_csv(avgs, TestABR, net)
+    # print_to_csv(avgs, TestABR, net)
 
 
 random.seed(10)
 if __name__ == '__main__':
+    create_csv(csv_file_path)
     test_network_samples(network_batch=20, video_batch=4, user_batch=5)
     # test(4, 2, 2)

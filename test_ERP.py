@@ -1,20 +1,20 @@
 ''' 用于测试的程序 '''
 import random
 import numpy as np
-from utils import get_trace_file, print_to_csv, print_metrics,create_csv
+from utils import get_trace_file, print_to_csv, print_metrics, create_csv
 from sabre360_with_qoe import Session
 from tqdm import tqdm
 import pandas as pd
 
-# csv_file_path = "./test_result/RAM360_Norway.csv"
-csv_file_path = "./test_result/RAM360_FCC.csv"
+csv_file_path = "./test_result/ERP_Norway.csv"
+# csv_file_path = "./test_result/ERP_FCC.csv"
 
 # net = "4g-logs"
 # net = "fcc-scaling"
 # net = "norway-scaling"
 # net = "fcc-9M"
-net = "fcc-test"
-# net = "norway-test"
+# net = "fcc-test"
+net = "norway-test"
 if net == "fcc-scaling":
     net_trace = "./data_trace/network/fcc-scaling"
     NETWORK_TRACE_NUM = 290
@@ -50,9 +50,10 @@ default_config['buffer_size'] = 5  # seconds
 default_config['log_file'] = 'log/session.log'
 
 # ================= 测试算法 =================
-TestABR = "RAM360"
+# TestABR = "RAM360"
 # TestABR = "TTS"
 # TestABR = "Melody"
+TestABR = "ERP"
 if TestABR == "RAM360":
     from abr.RAM360 import RAM360
 
@@ -65,6 +66,10 @@ elif TestABR == "Melody":
     from deep_rl.solution import Melody
 
     default_config['abr'] = Melody
+elif TestABR == "ERP":
+    from abr.ERP import ERP
+
+    default_config['abr'] = ERP
 
 
 def test(net_id, video_id, user_id):
@@ -116,4 +121,3 @@ random.seed(10)
 if __name__ == '__main__':
     create_csv(csv_file_path)
     test_network_samples(network_batch=20, video_batch=4, user_batch=5)
-    # test(4, 2, 0)

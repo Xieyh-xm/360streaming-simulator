@@ -1,3 +1,4 @@
+import csv
 import sys
 import os
 import json
@@ -12,6 +13,11 @@ sys.path.append("..")
 # Network_Root_Path = "./network/generate"
 Video_Root_Path = "./data_trace/video/manifest"
 User_Root_Path = "./data_trace/video/pose_trace"
+
+with open("test_data_info.csv", 'w', newline='') as f:
+    csv_writer = csv.writer(f)
+    csv_head = ["network", "video", "user"]
+    csv_writer.writerow(csv_head)
 
 config_file = './headset/headset_config.json'
 with open(config_file) as file:
@@ -138,6 +144,11 @@ def get_trace_file(Network_Root_Path, network_trace_id, video_trace_id, user_tra
     # print(network_trace)
     # print(video_trace)
     # print(user_trace)
+    file_path = "test_data_info.csv"
+    data_row = [network_trace, video_trace, user_trace]
+    with open(file_path, 'a+', newline='') as f:
+        csv_writer = csv.writer(f)
+        csv_writer.writerow(data_row)
     return network_trace, video_trace, user_trace
 
 
@@ -247,23 +258,30 @@ def print_metrics(metrics):
     print('Wastage ratio: {:.2f}\n'.format(wastage_ratio))
 
 
-def print_to_csv(metrics, algro, net):
+def print_to_csv(file_path, metrics):
     ''' ====== 结果打印至csv文件 =============================
        [0]score [1]qoe [2]quality [3]stall_time [4]var_space
        [5]var_time [6]bandwidth_usage [7]bandwidth_wastage'''
-    data = {}
-    data["algro"] = algro
-    data["net_trace"] = net
-    data["Quailty"] = metrics[2]
-    data["var_space"] = metrics[4]
-    data["var_time"] = metrics[5]
-    data["Stall_time"] = metrics[3]
-    data["QoE"] = metrics[1]
+    data_row = []
+    data_row.append(metrics[2])  # Quailty
+    data_row.append(metrics[4])  # Var_space
+    data_row.append(metrics[5])  # Var_time
+    data_row.append(metrics[3])  # Stall_time
+    data_row.append(metrics[1])  # QoE
     wastage_ratio = metrics[7] / metrics[6]
-    data["Wastage ratio"] = wastage_ratio
-    data["score"] = metrics[0]
-    dataframe = pd.DataFrame(data, index=[0])
-    dataframe.to_csv("test_result", sep=',')
+    data_row.append(wastage_ratio)  # Wastage ratio
+    data_row.append(metrics[0])  # Score
+
+    with open(file_path, 'a+', newline='') as f:
+        csv_writer = csv.writer(f)
+        csv_writer.writerow(data_row)
+
+
+def create_csv(file_path):
+    with open(file_path, 'w', newline='') as f:
+        csv_writer = csv.writer(f)
+        csv_head = ["Quailty", "Var_space", "Var_time", "Stall_time", "QoE", "Wastage ratio", "Score"]
+        csv_writer.writerow(csv_head)
 
 
 if __name__ == '__main__':
