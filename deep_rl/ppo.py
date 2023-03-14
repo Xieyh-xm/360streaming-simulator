@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 # from deep_rl.ac.actor_critic_et_update import ActorCritic
-from deep_rl.ac.actor_critic_bw_mask import ActorCritic
+from deep_rl.ac.actor_critic import ActorCritic
+
 
 ################################## PPO Policy ##################################
 class RolloutBuffer:
@@ -47,10 +48,10 @@ class PPO:
 
         self.MseLoss = nn.MSELoss()
 
-    def select_action(self, state, bw_mask):
+    def select_action(self, state, bw_mask, argmax_flag=False):
         with torch.no_grad():
             state = torch.FloatTensor(state).to(self.device)
-            action, action_probs = self.policy_old.act(state, bw_mask)
+            action, action_probs, action_entropy = self.policy_old.act(state, bw_mask, argmax_flag)
 
         state_n = torch.zeros([1, self.state_dim])
         state_n[0, :] = state[0, :]
@@ -63,7 +64,7 @@ class PPO:
         self.buffer.bw_mask.append(bw_mask_n)
         self.buffer.logprobs.append(action_probs)
 
-        return action
+        return action, action_entropy  # 返回1）动作 2）不确定度
 
     def update(self):
         # Monte Carlo estimate of returns

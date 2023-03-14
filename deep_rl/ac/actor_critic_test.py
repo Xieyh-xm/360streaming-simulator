@@ -98,4 +98,9 @@ class ActorCritic(nn.Module):
         action = action_probs.argmax()
         action_logprob = dist.log_prob(action)
 
-        return action.detach(), action_logprob.detach()
+        action_entropy = 0  # 计算动作熵
+        for action in action_probs:
+            prob = action.item()
+            action_entropy -= prob * math.log2(prob)
+
+        return action.detach(), action_logprob.detach(), action_entropy

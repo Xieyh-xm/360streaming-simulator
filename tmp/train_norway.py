@@ -13,7 +13,7 @@ def train():
     max_training_timesteps = int(3e6)  # break training loop if timeteps > max_training_timesteps
 
     # ============== Save Model ==============
-    env_name = "single322"
+    env_name = "norway"
     print("Training environment name : " + env_name)
     save_model_freq = 10  # save model frequency (in num timesteps)
 
@@ -21,20 +21,20 @@ def train():
     device = torch.device('cpu')
     print("Device set to : ", device)
 
-    K_epochs = 80  # update policy for K epochs in one PPO update
-    # K_epochs = 40  # update policy for K epochs in one PPO update
+    # K_epochs = 80  # update policy for K epochs in one PPO update
+    K_epochs = 40  # update policy for K epochs in one PPO update
 
-    eps_clip = 0.2  # clip parameter for PPO
-    # eps_clip = 0.1  # clip parameter for PPO
+    # eps_clip = 0.2  # clip parameter for PPO
+    eps_clip = 0.1  # clip parameter for PPO
     gamma = 0.95  # discount factor
 
     # 起始300轮
-    lr_actor = 0.0003  # learning rate for actor network
-    lr_critic = 0.001  # learning rate for critic network
+    # lr_actor = 0.0003  # learning rate for actor network
+    # lr_critic = 0.001  # learning rate for critic network
 
     # 300轮后
-    # lr_actor = 0.00003  # learning rate for actor network
-    # lr_critic = 0.0001  # learning rate for critic network
+    lr_actor = 0.00003  # learning rate for actor network
+    lr_critic = 0.0001  # learning rate for critic network
 
     random_seed = 0  # set random seed if required (0 = no random seed)
 
@@ -46,8 +46,8 @@ def train():
     state_dim = env.get_state_dim()  # state space dimension
     action_dim = env.get_action_dim()  # action space dimension
 
-    #  =============== Logging ===============
-    log_dir = "deep_rl/ppo_logs"
+    # =============== Logging ===============
+    log_dir = "../deep_rl/ppo_logs"
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
@@ -69,7 +69,7 @@ def train():
     # =============== Checkpointing ===============
     run_num_pretrained = 0  #### change this to prevent overwriting weights in same env_name folder
 
-    directory = "./deep_rl/PPO_preTrained"
+    directory = "deep_rl/PPO_preTrained"
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -91,12 +91,12 @@ def train():
     log_f.write('episode,timestep,reward\n')
 
     # todo: set up time_step
-    time_step = 0
+    time_step = 770
     i_episode = 0
-    # ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
+    ppo_agent.load(directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, time_step))
 
     # =============== 随机化trace ===============
-    network_batch = 2
+    network_batch = 10
     # network_dict_size = 240  # generate 240
     # network_dict_size = 600   # real_trace
     # network_dict_size = 290  # fcc 290
@@ -123,8 +123,7 @@ def train():
         for net_id in random.sample(network_list, network_batch):
             for video_id in random.sample(video_list, video_batch):
                 for user_id in random.sample(user_list, user_batch):
-                    # state, bw_mask = env.reset(net_id, video_id, user_id)
-                    state, bw_mask = env.reset(196, 2, 2)
+                    state, bw_mask = env.reset(net_id, video_id, user_id)
                     session_num += 1
                     done = False
                     while not done:
@@ -139,10 +138,10 @@ def train():
         ppo_agent.update()
         print_running_reward = cur_ep_reward / cnt
         avg_score = cur_ep_reward / session_num
-        print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {:.2f} \t Average Score: {:.2f}".format(i_episode,
-                                                                                                             time_step,
-                                                                                                             print_running_reward,
-                                                                                                             avg_score))
+        print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {:.2f} \tAverage Score : {:.2f} ".format(i_episode,
+                                                                                                              time_step,
+                                                                                                              print_running_reward,
+                                                                                                              avg_score))
         log_f.write('{},{},{:.2f}\n'.format(i_episode, time_step, print_running_reward))
         # save model weights
         if time_step % save_model_freq == 0:

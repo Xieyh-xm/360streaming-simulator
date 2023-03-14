@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 # from deep_rl.ac.actor_critic_et_update import ActorCritic
-from deep_rl.ac.actor_critic_bw_mask_test import ActorCritic
+from deep_rl.ac.actor_critic_test import ActorCritic
 
 
 ################################## PPO Policy ##################################
@@ -49,7 +49,7 @@ class PPO:
     def select_action(self, state, bw_mask):
         with torch.no_grad():
             state = torch.FloatTensor(state).to(self.device)
-            action, action_probs = self.policy_old.act(state, bw_mask)
+            action, action_probs, action_entropy = self.policy_old.act(state, bw_mask)
 
         state_n = torch.zeros([1, self.state_dim])
         state_n[0, :] = state[0, :]
@@ -57,7 +57,7 @@ class PPO:
         bw_mask_n = torch.zeros([1, self.action_dim - 2])
         bw_mask_n[0, :] = torch.Tensor(bw_mask)
 
-        return action
+        return action, action_entropy
 
     def save(self, checkpoint_path):
         torch.save(self.policy_old.state_dict(), checkpoint_path)

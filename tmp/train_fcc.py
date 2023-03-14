@@ -47,7 +47,7 @@ def train():
     action_dim = env.get_action_dim()  # action space dimension
 
     #  =============== Logging ===============
-    log_dir = "deep_rl/ppo_logs"
+    log_dir = "../deep_rl/ppo_logs"
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 

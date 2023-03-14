@@ -163,7 +163,7 @@ class Curriculum:
             done = False
             while not done:
                 cnt += 1
-                action = self.ppo_agent.select_action(state, bw_mask)
+                action, _ = self.ppo_agent.select_action(state, bw_mask)
                 state, bw_mask, reward, done = self.env.step(action)
                 sum_reward += reward
                 self.ppo_agent.buffer.rewards.append(reward)

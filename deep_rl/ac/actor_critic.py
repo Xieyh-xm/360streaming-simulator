@@ -21,6 +21,8 @@ class ActorCritic(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 128),
             nn.ReLU(),
+            nn.Linear(128, 128),  # add
+            nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
             nn.Linear(64, action_dim),
@@ -34,13 +36,15 @@ class ActorCritic(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 128),
             nn.ReLU(),
+            nn.Linear(128, 128),  # add
+            nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
             nn.Linear(64, 1),
         )
         self.critic.to(device)
 
-    def act(self, state):
+    def act(self, state, bw_mask, argmax_flag):
         state_numpy = state.numpy()
         mask = np.zeros(self.action_dim)  # 初始化，都可以下，不下的掩蔽为-1e9
 
@@ -50,15 +54,29 @@ class ActorCritic(nn.Module):
         bit_level_et = 5  # et的码率等级
         mask[bt_buffer_len * bit_level_et:25] = 1
         # 2. ET层在prefetch阶段需要顺序加载
-        et_buffer_len = math.floor(state_numpy[0, 11])  # et层
-        mask[(et_buffer_len + 1) * bit_level_et:25] = 1
+        # et_buffer_len = math.floor(state_numpy[0, 11])  # et层
+        # mask[(et_buffer_len + 1) * bit_level_et:25] = 1
         # todo 3. 不对播放前来不及下载完成的segment进行ET层下载。
+        for i in range(len(bw_mask)):
+            mask[i] = max(bw_mask[i], mask[i])
+
         # 4. 不选中没有可更新数据的segment进行下载
         download_bit_bt = state_numpy[0, 12]  # bt待下载数据量
         if download_bit_bt == 0:
             mask[self.action_dim - 2] = 1
         else:
             mask[self.action_dim - 1] = 1  # todo:有可下载的bt，就不sleep
+            # if bt_buffer_len < 10.0:  # bt 小于10，不sleep，可下载bt
+            #     mask[self.action_dim - 1] = 1
+            #     mask[self.action_dim - 2] = 0
+            # else:  # bt 大于10，不下载bt，可sleep
+            #     mask[self.action_dim - 2] = 1
+            #     mask[self.action_dim - 1] = 0
+
+            if bt_buffer_len <= 4.0:  # 2. bt_buffer_len至少两个chunk
+                mask[0:self.action_dim - 2] = 1
+                mask[self.action_dim - 1] = 1
+
         download_bit_et = state_numpy[0, 13:18]  # et待下载数据量
         for segment_id in range(5):
             if download_bit_et[segment_id] == 0:
@@ -72,13 +90,23 @@ class ActorCritic(nn.Module):
         # action_probs = F.softmax(self.actor(state) * mask, dim=-1)  # action masking
         # 将mask中为1的部分使用value替代（value通常是一个极大或极小值），0的部分保持原值
         action_probs = F.softmax(self.actor(state).masked_fill(mask, -1e9), dim=-1)
+
         dist = Categorical(action_probs)
-        action = dist.sample()
+        if not argmax_flag:
+            action = dist.sample()
+        else:
+            action = action_probs.argmax()
         action_logprob = dist.log_prob(action)
 
-        return action.detach(), action_logprob.detach()
+        action_entropy = 0  # 计算动作熵
+        for action_id in action_probs[0]:
+            prob = action_id.item()
+            if prob != 0:
+                action_entropy -= prob * math.log2(prob)
 
-    def evaluate(self, state, action):
+        return action.detach(), action_logprob.detach(), action_entropy
+
+    def evaluate(self, state, bw_mask, action):
         state_numpy = state.numpy()
         mask = np.zeros((state_numpy.shape[0], self.action_dim))
         '''=============== calculate mask ==============='''
@@ -88,16 +116,29 @@ class ActorCritic(nn.Module):
             bit_level_et = 5  # et的码率等级
             mask[k, bt_buffer_len * bit_level_et:25] = 1
             # 2. ET层在prefetch阶段需要顺序加载
-            et_buffer_len = int(state_numpy[k, 11])  # et层
-            mask[k, (et_buffer_len + 1) * bit_level_et:25] = 1
+            # et_buffer_len = int(state_numpy[k, 11])  # et层
+            # mask[k, (et_buffer_len + 1) * bit_level_et:25] = 1
             # todo 3. 不对播放前来不及下载完成的segment进行ET层下载。
+            for i in range(len(bw_mask[0])):
+                mask[k, i] = max(bw_mask[k, i], mask[k, i])
 
             # 4. 不选中没有可更新数据的segment进行下载
             download_bit_bt = state_numpy[k, 12]  # bt待下载数据量
             if download_bit_bt == 0:
-                mask[k, self.action_dim - 2] = 1
+                mask[k, self.action_dim - 2] = 1  # 不下载bt
             else:
                 mask[k, self.action_dim - 1] = 1  # todo: 有可下载的bt，就不sleep
+                # if bt_buffer_len < 10:  # bt 小于10，不sleep，可下载bt
+                #     mask[k, self.action_dim - 1] = 1
+                #     mask[k, self.action_dim - 2] = 0
+                # else:  # bt 大于10，不下载bt，可sleep
+                #     mask[k, self.action_dim - 2] = 1
+                #     mask[k, self.action_dim - 1] = 0
+
+                if bt_buffer_len <= 4.0:  # 2. bt_buffer_len至少两个chunk
+                    mask[k, 0:self.action_dim - 2] = 1
+                    mask[k, self.action_dim - 1] = 1
+
             download_bit_et = state_numpy[k, 13:18]  # et待下载数据量
             for segment_id in range(5):
                 if download_bit_et[segment_id] == 0:
