@@ -149,7 +149,7 @@ def resize_json_trace(target_bw):
         trace = NetworkTrace(filename)
         trace.read_trace()
         trace.scale_bw_avg(target_bw)
-        trace.save_trace(NEW_PATH, new_info=str(target_bw) + "kbps")
+        trace.save_trace(NEW_PATH)
 
 
 def take_num(filename):
