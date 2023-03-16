@@ -30,20 +30,20 @@ def train():
     device = torch.device('cpu')
     print("Device set to : ", device)
 
-    K_epochs = 80  # update policy for K epochs in one PPO update
-    # K_epochs = 60  # update policy for K epochs in one PPO update
+    # K_epochs = 80  # update policy for K epochs in one PPO update
+    K_epochs = 60  # update policy for K epochs in one PPO update
 
     # eps_clip = 0.2  # clip parameter for PPO
-    eps_clip = 0.2  # clip parameter for PPO
+    eps_clip = 0.1  # clip parameter for PPO
     gamma = 0.98  # discount factor
 
     # 起始300轮
-    lr_actor = 0.0003  # learning rate for actor network
-    lr_critic = 0.001  # learning rate for critic network
+    # lr_actor = 0.0003  # learning rate for actor network
+    # lr_critic = 0.001  # learning rate for critic network
 
     # 300轮后
-    # lr_actor = 0.00003  # learning rate for actor network
-    # lr_critic = 0.0001  # learning rate for critic network
+    lr_actor = 0.00003  # learning rate for actor network
+    lr_critic = 0.0001  # learning rate for critic network
 
     random_seed = 0  # set random seed if required (0 = no random seed)
 
@@ -121,7 +121,7 @@ def train():
 
     ''' 第一阶段课程学习相关变量初始化 '''
     beta = 0.3
-    history_length = 5
+    history_length = 3
     past_reward = None
     past_score = [[] for i in range(SUBTASK_NUM)]
 
@@ -144,18 +144,17 @@ def train():
             cur_reward, cur_entropy = test_in_validation(ppo_agent,
                                                          seed=6)  # [subtask0,subtask1,...,subtask5]
             delta_reward = cur_reward - past_reward
-            score = abs(delta_reward) + beta * cur_entropy
+            score = delta_reward + beta * cur_entropy
             past_reward = cur_reward  # save
             for task_id in range(SUBTASK_NUM):
                 if len(past_score[task_id]) > history_length:
                     past_score[task_id].pop(0)
                 past_score[task_id].append(score[task_id])
-            print("past_score = ", past_score)
+
             ''' 2. 组织训练数据 '''
             subtask_prob = generate_prob(past_score)
-            print("subtask_prob = ", subtask_prob)
             for i in range(len(subtask_prob)):
-                trace_num = int(sum_train_net * subtask_prob[i])
+                trace_num = sum_train_net * subtask_prob[i]
                 train_net_id += random.sample(range(i * 100, (i + 1) * 100), trace_num)
 
         cur_ep_reward = 0
@@ -186,8 +185,6 @@ def train():
         # 在验证集上测试
         ppo_agent.update()  # 更新模型
         print_running_reward = cur_ep_reward / session_num
-
-        avg_score = cur_ep_reward / session_num
         print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {:.2f}".format(i_episode,
                                                                                     time_step,
                                                                                     print_running_reward))
@@ -277,12 +274,12 @@ def generate_prob(past_score):
     ret = []
     sum_score = 0
     # 随机采样
-    for task_id in range(len(past_score)):
+    for task_id in range(past_score):
         score = random.choice(past_score[task_id])
         ret.append(score)
         sum_score += score
     # 归一化
-    for task_id in range(len(past_score)):
+    for task_id in range(past_score):
         ret[task_id] /= sum_score
     return ret
 
