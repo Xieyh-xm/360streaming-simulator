@@ -6,15 +6,13 @@ import torch
 import random
 from datetime import datetime
 # from deep_rl.rl_env.rl_env import RLEnv
-from deep_rl.rl_env.rl_env_bw_mask import RLEnv
-from deep_rl.ppo import PPO
+from deep_rl.rl_env.rl_env_bw_mask import RLEnv, STATE_DIMENSION, ACTION_DIMENSION
+from deep_rl.ppo_multi import PPO
 import multiprocessing
 
 net_trace = "./data_trace/network/sorted_trace"
-env = RLEnv(net_trace)  # creat environment
-
-state_dim = env.get_state_dim()  # state space dimension
-action_dim = env.get_action_dim()  # action space dimension
+state_dim = STATE_DIMENSION  # state space dimension
+action_dim = ACTION_DIMENSION  # action space dimension
 
 
 def train():
@@ -111,11 +109,11 @@ def train():
     # network_dict_size = 310  # norway 310
     network_list = range(network_dict_size)
 
-    video_batch = 1
+    video_batch = 3
     video_dict_size = 18
     video_list = range(video_dict_size)
 
-    user_batch = 1
+    user_batch = 3
     user_dict_size = 48
     user_list = range(user_dict_size)
 
@@ -133,7 +131,7 @@ def train():
         random.seed(ticks)
         ''' 1. 记录训练效果 '''
         train_net_id = []
-        sum_train_net = 30  # 暂定30条trace
+        sum_train_net = 12  # 暂定30条trace
         if first_step:
             cur_reward, cur_entropy = test_in_validation(ppo_agent,
                                                          seed=6)  # [subtask0,subtask1,...,subtask5]
@@ -157,34 +155,28 @@ def train():
                 trace_num = int(sum_train_net * subtask_prob[i])
                 train_net_id += random.sample(range(i * 100, (i + 1) * 100), trace_num)
 
-        cur_ep_reward = 0
         time_step += 1
-        session_num = 0  # 播放了几次
         print(">>>>> train agent with sorted network")
+        reward_q = multiprocessing.Queue()
+        train_jobs = []
         for net_id in train_net_id:
             ticks = int(time.time())
             random.seed(ticks)
             for video_id in random.sample(video_list, video_batch):
                 for user_id in random.sample(user_list, user_batch):
-                    # 在 <特定网络><特定视频><特定用户> 播放一个视频
-                    state, bw_mask = env.reset(net_id, video_id, user_id)
-                    session_num += 1
-                    action_cnt = 0
-                    done = False
-
-                    while not done:
-                        action_cnt += 1
-                        # 1. select action with policy
-                        action, _ = ppo_agent.select_action(state, bw_mask)  # 动作 & 动作的不确定度
-                        state, bw_mask, reward, done = env.step(action)
-                        # 2. saving reward and is_terminals
-                        ppo_agent.buffer.rewards.append(reward)
-                        ppo_agent.buffer.is_terminals.append(done)
-                        cur_ep_reward += reward / action_cnt
-
+                    p = multiprocessing.Process(target=sub_train, args=(ppo_agent, net_id, video_id, user_id, reward_q))
+                    train_jobs.append(p)
+                    p.start()
+        for p in train_jobs:
+            p.join()
+        sum_reward = 0
+        for job in train_jobs:
+            reward = reward_q.get()
+            sum_reward += reward
+        session_num = len(train_net_id) * video_batch * user_batch
+        print_running_reward = sum_reward / session_num
         # 在验证集上测试
         ppo_agent.update()  # 更新模型
-        print_running_reward = cur_ep_reward / session_num
         print("\033[1;31m Episode : {} \t\t Timestep : {} \t\t Average Reward : {:.2f}\033[0m".format(i_episode,
                                                                                                       time_step,
                                                                                                       print_running_reward))
@@ -200,7 +192,6 @@ def train():
             print("--------------------------------------------------------------------------------------------")
         i_episode += 1
     log_f.close()
-    env.close()
 
     # print total training time
     print("============================================================================================")
@@ -214,6 +205,38 @@ def train():
 
 
 SUBTASK_NUM = 6
+
+
+def sub_train(ppo_agent, net_id, video_id, user_id, reward_q):
+    sub_env = RLEnv(net_trace)  # creat environment
+    # 在 <特定网络><特定视频><特定用户> 播放一个视频
+    state, bw_mask = sub_env.reset(net_id, video_id, user_id)
+    sum_reward = 0
+    action_cnt = 0
+    done = False
+
+    while not done:
+        action_cnt += 1
+        # 1. select action with policy
+        action, _, action_probs = ppo_agent.select_action(state, bw_mask)  # 动作 & 动作的不确定度
+
+        state_n = torch.zeros([len(state_dim)])
+        state_n[:] = state[0, :]
+        bw_mask_n = torch.zeros([action_dim - 2])
+        bw_mask_n[:] = torch.Tensor(bw_mask)
+        ppo_agent.buffer.states.append(state_n)
+        ppo_agent.buffer.actions.append(action)
+        ppo_agent.buffer.logprobs.append(action_probs)
+        ppo_agent.buffer.bw_mask.append(bw_mask_n)
+
+        state, bw_mask, reward, done = sub_env.step(action)
+        # 2. saving reward and is_terminals
+        ppo_agent.buffer.rewards.append(reward)
+        ppo_agent.buffer.is_terminals.append(done)
+        sum_reward += reward
+
+    reward_q.put(sum_reward / action_cnt)
+    sub_env.close()
 
 
 def test_in_validation(ppo_agent, seed=6):
@@ -252,29 +275,30 @@ def test_in_validation(ppo_agent, seed=6):
         for p in test_jobs:
             p.join()
 
-        sum_reward, sum_entropy = 0, 0
+        sum_score, sum_entropy = 0, 0
         for job in test_jobs:
             avg_reward, avg_entropy = multi_q.get()
-            sum_reward += avg_reward
+            sum_score += avg_reward
             sum_entropy += avg_entropy
 
-        session_num = len(cur_net_list) * len(video_list) * len(user_list)
-        reward_list.append(sum_reward / session_num)
+        session_num = len(cur_net_list) * video_test_batch * user_test_batch
+        reward_list.append(sum_score / session_num)
         entropy_list.append(sum_entropy / session_num)
     ppo_agent.buffer.clear()
-    print("\033[1;36m avg reward in validation = ", str(sum(reward_list) / len(reward_list)), "\033[0m")
+    print("\033[1;36m avg score in validation = ", str(sum(reward_list) / len(reward_list)), "\033[0m")
     # print("avg reward in validation = ", str(sum(reward_list) / len(reward_list)))
     return np.array(reward_list), np.array(entropy_list)
 
 
 def test(ppo_agent, net_id, video_id, user_id, multi_q):
+    env = RLEnv(net_trace)  # creat environment
     state, bw_mask = env.reset(net_id, video_id, user_id)
     sum_entropy, sum_reward = 0, 0
     done = False
     action_cnt = 0
     while not done:
         action_cnt += 1
-        action, action_entropy = ppo_agent.select_action(state, bw_mask, argmax_flag=True)  # 动作 & 动作的不确定度
+        action, action_entropy, _ = ppo_agent.select_action(state, bw_mask, argmax_flag=True)  # 动作 & 动作的不确定度
         state, bw_mask, reward, done = env.step(action)
         sum_reward += reward
         sum_entropy += action_entropy
@@ -282,6 +306,7 @@ def test(ppo_agent, net_id, video_id, user_id, multi_q):
     avg_entropy = sum_entropy / action_cnt
     # return avg_reward, avg_entropy
     multi_q.put([avg_reward, avg_entropy])
+    env.close()
 
 
 def generate_prob(past_score):

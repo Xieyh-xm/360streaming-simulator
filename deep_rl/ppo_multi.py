@@ -58,18 +58,13 @@ class PPO:
         #
         # bw_mask_n = torch.zeros([1, self.action_dim - 2])
         # bw_mask_n[0, :] = torch.Tensor(bw_mask)
-        state_n = torch.zeros([self.state_dim])
-        state_n[:] = state[0, :]
+        #
+        # self.buffer.states.append(state_n)
+        # self.buffer.actions.append(action)
+        # self.buffer.bw_mask.append(bw_mask_n)
+        # self.buffer.logprobs.append(action_probs)
 
-        bw_mask_n = torch.zeros([self.action_dim - 2])
-        bw_mask_n[:] = torch.Tensor(bw_mask)
-
-        self.buffer.states.append(state_n)
-        self.buffer.actions.append(action)
-        self.buffer.bw_mask.append(bw_mask_n)
-        self.buffer.logprobs.append(action_probs)
-
-        return action, action_entropy  # 返回1）动作 2）不确定度
+        return action, action_entropy, action_probs  # 返回1）动作 2）不确定度
 
     def update(self):
         # Monte Carlo estimate of returns
@@ -89,6 +84,7 @@ class PPO:
         old_states = torch.squeeze(torch.stack(self.buffer.states, dim=0)).detach().to(self.device)
         old_bw_masks = torch.squeeze(torch.stack(self.buffer.bw_mask, dim=0)).detach().to(self.device)
         old_actions = torch.squeeze(torch.stack(self.buffer.actions, dim=0)).detach().to(self.device)
+
         old_logprobs = torch.squeeze(torch.stack(self.buffer.logprobs, dim=0)).detach().to(self.device)
 
         # Optimize policy for K epochs
