@@ -9,6 +9,9 @@ from datetime import datetime
 from deep_rl.rl_env.rl_env_bw_mask import RLEnv, STATE_DIMENSION, ACTION_DIMENSION
 from deep_rl.ppo_multi import PPO
 import multiprocessing
+import warnings
+
+warnings.filterwarnings('ignore')
 
 net_trace = "./data_trace/network/sorted_trace"
 state_dim = STATE_DIMENSION  # state space dimension

@@ -258,11 +258,14 @@ def print_metrics(metrics):
     print('Wastage ratio: {:.2f}\n'.format(wastage_ratio))
 
 
-def print_to_csv(file_path, metrics):
+def print_to_csv(file_path, net_id, video_id, user_id, metrics):
     ''' ====== 结果打印至csv文件 =============================
        [0]score [1]qoe [2]quality [3]stall_time [4]var_space
        [5]var_time [6]bandwidth_usage [7]bandwidth_wastage'''
     data_row = []
+    data_row.append(net_id)
+    data_row.append(video_id)
+    data_row.append(user_id)
     data_row.append(metrics[2])  # Quailty
     data_row.append(metrics[4])  # Var_space
     data_row.append(metrics[5])  # Var_time
@@ -280,7 +283,8 @@ def print_to_csv(file_path, metrics):
 def create_csv(file_path):
     with open(file_path, 'w', newline='') as f:
         csv_writer = csv.writer(f)
-        csv_head = ["Quailty", "Var_space", "Var_time", "Stall_time", "QoE", "Wastage ratio", "Score"]
+        csv_head = ["net_id", "video_id", "user_id", "Quailty", "Var_space", "Var_time", "Stall_time", "QoE",
+                    "Wastage ratio", "Score"]
         csv_writer.writerow(csv_head)
 
 
