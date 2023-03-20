@@ -14,7 +14,7 @@ sys.path.append("..")
 Video_Root_Path = "./data_trace/video/manifest"
 User_Root_Path = "./data_trace/video/pose_trace"
 
-with open("test_data_info.csv", 'w', newline='') as f:
+with open("test_data_info_new.csv", 'w', newline='') as f:
     csv_writer = csv.writer(f)
     csv_head = ["network", "video", "user"]
     csv_writer.writerow(csv_head)
@@ -144,7 +144,7 @@ def get_trace_file(Network_Root_Path, network_trace_id, video_trace_id, user_tra
     # print(network_trace)
     # print(video_trace)
     # print(user_trace)
-    file_path = "test_data_info.csv"
+    file_path = "test_data_info_new.csv"
     data_row = [network_trace, video_trace, user_trace]
     with open(file_path, 'a+', newline='') as f:
         csv_writer = csv.writer(f)

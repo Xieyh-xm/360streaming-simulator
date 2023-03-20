@@ -6,7 +6,7 @@ from sabre360_with_qoe import Session
 from tqdm import tqdm
 
 # csv_file_path = "./test_result/TTS_Norway.csv"
-csv_file_path = "./test_result/TTS_FCC.csv"
+csv_file_path = "../test_result/TTS_FCC.csv"
 
 # net = "4g-logs"
 # net = "fcc-9M"

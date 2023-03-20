@@ -5,7 +5,7 @@ from utils import get_trace_file, print_metrics, print_to_csv, create_csv
 from sabre360_with_qoe import Session
 from tqdm import tqdm
 
-csv_file_path = "./test_result/STS_Norway.csv"
+csv_file_path = "../test_result/STS_Norway.csv"
 # csv_file_path = "./test_result/STS_FCC.csv"
 
 # net = "4g-logs"

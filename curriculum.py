@@ -181,3 +181,6 @@ class Curriculum:
         self.hard_network_id.pop(0)
         self.hard_pose_id.pop(0)
         self.hard_video_id.pop(0)
+
+
+

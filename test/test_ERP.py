@@ -6,7 +6,7 @@ from sabre360_with_qoe import Session
 from tqdm import tqdm
 import pandas as pd
 
-csv_file_path = "./test_result/ERP_Norway.csv"
+csv_file_path = "../test_result/ERP_Norway.csv"
 # csv_file_path = "./test_result/ERP_FCC.csv"
 
 # net = "4g-logs"

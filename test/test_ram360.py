@@ -7,7 +7,7 @@ from tqdm import tqdm
 import pandas as pd
 
 # csv_file_path = "./test_result/RAM360_Norway.csv"
-csv_file_path = "./test_result/RAM360_FCC.csv"
+csv_file_path = "../test_result/RAM360_FCC.csv"
 
 # net = "4g-logs"
 # net = "fcc-scaling"

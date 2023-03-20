@@ -9,7 +9,7 @@ class RolloutBuffer:
     def __init__(self):
         self.actions = []
         self.states = []
-        self.bw_mask = []
+        self.bw_masks = []
         self.logprobs = []
         self.rewards = []
         self.is_terminals = []
@@ -17,7 +17,7 @@ class RolloutBuffer:
     def clear(self):
         del self.actions[:]
         del self.states[:]
-        del self.bw_mask[:]
+        del self.bw_masks[:]
         del self.logprobs[:]
         del self.rewards[:]
         del self.is_terminals[:]
@@ -82,7 +82,7 @@ class PPO:
 
         # convert list to tensor
         old_states = torch.squeeze(torch.stack(self.buffer.states, dim=0)).detach().to(self.device)
-        old_bw_masks = torch.squeeze(torch.stack(self.buffer.bw_mask, dim=0)).detach().to(self.device)
+        old_bw_masks = torch.squeeze(torch.stack(self.buffer.bw_masks, dim=0)).detach().to(self.device)
         old_actions = torch.squeeze(torch.stack(self.buffer.actions, dim=0)).detach().to(self.device)
 
         old_logprobs = torch.squeeze(torch.stack(self.buffer.logprobs, dim=0)).detach().to(self.device)

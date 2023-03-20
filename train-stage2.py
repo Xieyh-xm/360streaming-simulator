@@ -10,6 +10,7 @@ from curriculum import Curriculum
 from myLog import myLog
 
 
+
 def train():
     max_ep_len = 1000  # max timesteps in one episode
     max_training_timesteps = int(3e6)  # break training loop if timeteps > max_training_timesteps
