@@ -8,6 +8,7 @@ from datetime import datetime
 # from deep_rl.rl_env.rl_env import RLEnv
 from deep_rl.rl_env.rl_env_bw_mask import RLEnv, STATE_DIMENSION, ACTION_DIMENSION
 from deep_rl.ppo_multi import PPO
+import math
 import multiprocessing
 
 net_trace = "./data_trace/network/sorted_trace"
@@ -15,6 +16,8 @@ state_dim = STATE_DIMENSION  # state space dimension
 action_dim = ACTION_DIMENSION  # action space dimension
 
 Alpha = 0.7
+
+change_interval = 10  # 每隔10轮换一批验证集
 
 
 def train():
@@ -121,29 +124,28 @@ def train():
 
     ''' 第一阶段课程学习相关变量初始化 '''
     beta = 0.3
-    history_length = 1
+    history_length = 3
     past_reward = None
     past_score = [[] for i in range(SUBTASK_NUM)]
     avg_increase = 0
     # ===========================================
     # training loop
-    first_step = True
     past_subtask_prob = [0 for i in range(SUBTASK_NUM)]
     past_subtask_prob[0] = 1
     while time_step <= max_training_timesteps:
         ticks = int(time.time())
         random.seed(ticks)
         ''' 1. 记录训练效果 '''
-        train_net_id = []
+        train_net_id = None
         sum_train_net = 10  # 暂定15条trace
-        if first_step:
-            cur_reward, _ = test_in_validation(ppo_agent,
+        if time_step % change_interval == 0:
+            print(">>> 间隔10轮 --- 更新验证集 <<<")
+            cur_reward, _ = test_in_validation(ppo_agent, time_step,
                                                seed=6)  # [subtask0,subtask1,...,subtask5]
             past_reward = cur_reward
-            first_step = False
             train_net_id = organize_data(sum_train_net, past_subtask_prob)
         else:
-            cur_reward, cur_entropy = test_in_validation(ppo_agent,
+            cur_reward, cur_entropy = test_in_validation(ppo_agent, time_step,
                                                          seed=6)  # [subtask0,subtask1,...,subtask5]
             cur_delta_reward = np.sum(cur_reward - past_reward)
 
@@ -185,7 +187,7 @@ def train():
 
         for job in train_jobs:
             while job.is_alive():
-                while False == buffer_q.empty():
+                while not buffer_q.empty():
                     buffer = buffer_q.get()
                     ppo_agent.buffer.states += buffer[0]
                     ppo_agent.buffer.actions += buffer[1]
@@ -222,14 +224,6 @@ def train():
         i_episode += 1
     log_f.close()
 
-    # print total training time
-    print("============================================================================================")
-    end_time = datetime.now().replace(microsecond=0)
-    print("Started training at (GMT) : ", start_time)
-    print("Finished training at (GMT) : ", end_time)
-    print("Total training time  : ", end_time - start_time)
-    print("============================================================================================")
-
     return
 
 
@@ -258,10 +252,24 @@ def organize_data(sum_train_net, subtask_prob) -> list:
     ticks = int(time.time())
     random.seed(ticks)
     train_net_id = []
-    for i in range(len(subtask_prob)):
-        trace_num = int(sum_train_net * subtask_prob[i])
+    # 只取前k=3大的trace
+    subtask_prob = np.array(subtask_prob)
+    k = 3
+    selected_task = subtask_prob.argsort()[-k:]
+    selected_task = selected_task[::-1]  # 按照概率由小到大的方法保存数组序号
+    modified_prob = np.zeros(k)
+    for i in range(k):
+        modified_prob[i] = subtask_prob[selected_task[i]]
+    modified_prob = modified_prob / np.sum(modified_prob)
+
+    for i in range(len(selected_task)):
+        task_id = selected_task[i]
+        prob = modified_prob[i]
         per_num = 600 // SUBTASK_NUM
-        train_net_id += random.sample(range(i * per_num, (i + 1) * per_num), trace_num)
+        trace_num = min(math.ceil(sum_train_net * prob), sum_train_net - len(train_net_id))
+        train_net_id += random.sample(range(task_id * per_num, (task_id + 1) * per_num), trace_num)
+
+    print("train_net_id = ", train_net_id)
     return train_net_id
 
 
@@ -306,8 +314,10 @@ def sub_train(ppo_agent, net_id, video_id, user_id, reward_q, buffer_q):
     buffer_q.put([states, actions, logprobs, bw_masks, rewards, is_terminals])
 
 
-def test_in_validation(ppo_agent, seed=6):
+def test_in_validation(ppo_agent, time_step, seed=6):
     print(">>>>> test agent in validation")
+    # 间隔10轮换一次验证集
+    seed += time_step // change_interval
     random.seed(seed)
     # 分为6类，每类100种trace
     network_dict_size = 600
@@ -398,7 +408,5 @@ def softmax(x):
 
 if __name__ == '__main__':
     train()
-    # past_score = [[120.16211369080486], [0.6151841050066044], [0.5701764034926123], [0.6088996317899383],
-    #               [0.4576987014894281]]
-    # ret = generate_prob(past_score)
-    # print(ret)
+    # prob = [0.3, 0.4, 0.1, 0.1, 0.1]
+    # print(organize_data(10, prob))

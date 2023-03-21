@@ -1,6 +1,7 @@
 import json
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 
 ''' 用于放缩网络trace & 生成网络trace '''
 
@@ -10,12 +11,13 @@ DEFAULT_LATENCY = 20.
 class NetworkTrace:
     ''' used for json file '''
 
-    def __init__(self, filepath):
+    def __init__(self, filepath=None):
         self.file_path = filepath
         self.play_duration = []  # ms
         self.bandwidth = []  # kbps
         self.latency = []  # ms
-        self.read_trace()
+        if filepath:
+            self.read_trace()
 
     def read_trace(self):
         with open(self.file_path) as file:
@@ -51,6 +53,34 @@ class NetworkTrace:
                 temp_dict["latency_ms"] = self.latency[i]
                 data.append(temp_dict.copy())
             json.dump(data, output_file)
+
+    def plot_network(self, file_name, save_flag=True):
+        fig, ax = plt.subplots(dpi=150)
+        bandwidth = np.array(self.bandwidth)
+        x = np.zeros(len(self.play_duration))
+        for i in range(1, len(self.play_duration)):
+            x[i] = x[i - 1] + self.play_duration[i - 1] / 1000.
+        ax.plot(x, bandwidth)
+        ax.set_xlabel('s')
+        ax.set_ylabel('kbps')
+        ax.set_ylim(bottom=0.)
+        # plt.show()
+        ax.set_title(file_name)
+        if save_flag:
+            plt.savefig('../data_trace/network_fig/generate/' + file_name[:-5] + '.png')
+        else:
+            plt.show()
+        plt.close()
+
+
+def show_all_network():
+    path = "../data_trace/network/sorted_trace/"
+    for i in range(600):
+        file_name = "sorted_trace_{}.json".format(i)
+        print("processing ", file_name, " ...")
+        trace = NetworkTrace(path + file_name)
+        trace.read_trace()
+        trace.plot_network(file_name)
 
 
 def MM_to_json(path):
@@ -201,4 +231,5 @@ NEW_PATH = "../network/norway-9M/"
 if __name__ == '__main__':
     # resize_json_trace(target_bw=9000)  # kbps
     # trace2json(orgin="Genet")
-    trace_classify()
+    # trace_classify()
+    show_all_network()

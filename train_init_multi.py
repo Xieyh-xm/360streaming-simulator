@@ -10,7 +10,8 @@ from deep_rl.rl_env.rl_env_bw_mask import RLEnv, STATE_DIMENSION, ACTION_DIMENSI
 from deep_rl.ppo_multi import PPO
 import multiprocessing
 
-net_trace = "./data_trace/network/sorted_trace"
+# net_trace = "./data_trace/network/sorted_trace"
+net_trace = "./data_trace/network/generate"
 state_dim = STATE_DIMENSION  # state space dimension
 action_dim = ACTION_DIMENSION  # action space dimension
 
@@ -22,7 +23,7 @@ def train():
     max_training_timesteps = int(3e6)  # break training loop if timeteps > max_training_timesteps
 
     # ============== Save Model ==============
-    env_name = "2023-init"
+    env_name = "2023-init-generate"
     print("Training environment name : " + env_name)
     save_model_freq = 25  # save model frequency (in num timesteps)
 
@@ -105,7 +106,7 @@ def train():
     network_batch = 3
     # network_dict_size = 240  # generate 240
     # network_dict_size = 600  # real_trace & sorted_trace
-    network_dict_size = 600  # 一阶段
+    network_dict_size = 750  # 一阶段
 
     # network_dict_size = 290  # fcc 290
     # network_dict_size = 310  # norway 310
@@ -203,7 +204,7 @@ def train():
 
 
 SUBTASK_NUM = 5
-beta = 0.5
+beta = 2
 
 
 def calculate_score(avg_increase, cur_reward, past_reward, cur_entropy, past_data_prob):
