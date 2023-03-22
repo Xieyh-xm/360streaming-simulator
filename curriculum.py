@@ -58,19 +58,11 @@ class Curriculum:
                     rl_qoe = self.test_rl_model(network_id, video_id, user_id)
                     gap = max(RAM360_qoe, TTS_qoe) - rl_qoe  # 2. 计算gap
                     if gap > 0:  # 3. 加入hard list
-                        # logger.info(
-                        #     '<{}> hard env --> net : {}\t video : {}\t pose : {}\t gap = {:.3f}'.format(cnt, network_id,
-                        #                                                                                 video_id,
-                        #                                                                                 user_id, gap))
                         if len(self.hard_network_id) >= MAX_ENV:
                             self.pop_env()
                         self.hard_network_id.append(network_id)
                         self.hard_video_id.append(video_id)
                         self.hard_pose_id.append(user_id)
-                    # elif gap > 0:
-                    #     logger.info('<{}> rl-based model closed to heuristic rule =_='.format(cnt))
-                    # else:
-                    #     logger.info("<{}> rl-based model better than heuristic rule (*^▽^*)".format(cnt))
         if len(self.hard_network_id) == 0:
             return False
         return True
