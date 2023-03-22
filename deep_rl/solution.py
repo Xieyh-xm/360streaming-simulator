@@ -27,7 +27,8 @@ HISTORY_LENGTH = 1
 ACTION_DIMENSION = 27
 # NN_MODEL = "deep_rl/PPO_preTrained/lecture/PPO_lecture_0_1460.pth"
 # NN_MODEL = "deep_rl/PPO_preTrained/lecture/PPO_lecture_0_1290.pth"
-NN_MODEL = "deep_rl/PPO_preTrained/stage_1/PPO_stage_1_0_75.pth"
+# NN_MODEL = "deep_rl/PPO_preTrained/2023-init-generate/PPO_2023-init-generate_0_50.pth"
+NN_MODEL = "deep_rl/PPO_preTrained/stage_1/PPO_stage_1_0_50.pth"
 
 
 lr_actor = 0.0003  # learning rate for actor network

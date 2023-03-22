@@ -7,7 +7,7 @@ from tqdm import tqdm
 import multiprocessing
 
 # csv_file_path = "./test_result/Proposed_Norway.csv"
-csv_file_path = "test_result/Proposed_stage_1_75.csv"
+csv_file_path = "test_result/stage-generate_0_50_norway.csv"
 
 # net = "norway-9M"
 # net = "fcc-9M"
@@ -15,8 +15,8 @@ csv_file_path = "test_result/Proposed_stage_1_75.csv"
 # net = "4g-scaling"
 # net = "fcc-scaling"
 # net = "norway-scaling"
-net = "fcc-test"
-# net = "norway-test"
+# net = "fcc-test"
+net = "norway-test"
 if net == "fcc-scaling":
     net_trace = "./data_trace/network/fcc-scaling"
     NETWORK_TRACE_NUM = 290

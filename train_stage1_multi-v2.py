@@ -11,7 +11,7 @@ from deep_rl.ppo_multi import PPO
 import math
 import multiprocessing
 
-net_trace = "./data_trace/network/sorted_trace"
+net_trace = "./data_trace/network/generate"
 state_dim = STATE_DIMENSION  # state space dimension
 action_dim = ACTION_DIMENSION  # action space dimension
 
@@ -108,7 +108,7 @@ def train():
     network_batch = 3
     # network_dict_size = 240  # generate 240
     # network_dict_size = 600  # real_trace & sorted_trace
-    network_dict_size = 600  # 一阶段
+    network_dict_size = 750  # 一阶段
 
     # network_dict_size = 290  # fcc 290
     # network_dict_size = 310  # norway 310

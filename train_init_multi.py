@@ -23,7 +23,7 @@ def train():
     max_training_timesteps = int(3e6)  # break training loop if timeteps > max_training_timesteps
 
     # ============== Save Model ==============
-    env_name = "2023-init-generate"
+    env_name = "non-init-generate"
     print("Training environment name : " + env_name)
     save_model_freq = 25  # save model frequency (in num timesteps)
 
