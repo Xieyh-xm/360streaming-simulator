@@ -25,10 +25,7 @@ MAX_ET_LEN = 5  # 最大的ET buffer长度 s
 STATE_DIMENSION = 36
 HISTORY_LENGTH = 1
 ACTION_DIMENSION = 27
-# NN_MODEL = "deep_rl/PPO_preTrained/lecture/PPO_lecture_0_1460.pth"
-# NN_MODEL = "deep_rl/PPO_preTrained/lecture/PPO_lecture_0_1290.pth"
-# NN_MODEL = "deep_rl/PPO_preTrained/2023-init-generate/PPO_2023-init-generate_0_50.pth"
-NN_MODEL = "deep_rl/PPO_preTrained/stage_1/PPO_stage_1_0_50.pth"
+NN_MODEL = "deep_rl/PPO_preTrained/lecture-stage-1/PPO_stage_1_generate-non_0_200.pth"
 
 
 lr_actor = 0.0003  # learning rate for actor network

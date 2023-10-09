@@ -67,20 +67,21 @@ class NetworkTrace:
         # plt.show()
         ax.set_title(file_name)
         if save_flag:
-            plt.savefig('../data_trace/network_fig/generate/' + file_name[:-5] + '.png')
+            plt.savefig('../data_trace/network_fig/norway-test/' + file_name[:-5] + '.png')
         else:
             plt.show()
         plt.close()
 
 
 def show_all_network():
-    path = "../data_trace/network/sorted_trace/"
-    for i in range(600):
-        file_name = "sorted_trace_{}.json".format(i)
-        print("processing ", file_name, " ...")
-        trace = NetworkTrace(path + file_name)
-        trace.read_trace()
-        trace.plot_network(file_name)
+    path = "../data_trace/network/norway-test/"
+    filename_list = os.listdir(path)
+    for i, filename in enumerate(filename_list):
+        # file_name = "sorted_trace_{}.json".format(i)
+        print("processing ", filename, " ...")
+        trace = NetworkTrace(path + filename)
+        # trace.read_trace()
+        trace.plot_network(filename)
 
 
 def MM_to_json(path):
@@ -94,7 +95,7 @@ def MM_to_json(path):
         iter_f = iter(trace_file)
         for line in iter_f:
             idx = 0
-            while line[idx] != ' ':
+            while line[idx] != '\t':
                 idx += 1
             idx += 1
             # 1. record time duration
@@ -232,4 +233,8 @@ if __name__ == '__main__':
     # resize_json_trace(target_bw=9000)  # kbps
     # trace2json(orgin="Genet")
     # trace_classify()
-    show_all_network()
+    # show_all_network()
+    path = "../data_trace/network/raw_trace/5g/"
+    files = os.listdir(path)
+    for file in files:
+        MM_to_json(path + file)

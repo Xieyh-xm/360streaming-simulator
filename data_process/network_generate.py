@@ -12,10 +12,10 @@ PLAY_DURATION = 500  # ms
 def generator(cur_scale, new_filename):
     new_trace = NetworkTrace()
     sample_num = int(TOTAL_TIME / (PLAY_DURATION / 1000.))
-    avg_choose = [9000, 12500, 16000]
+    avg_choose = [8000, 10000, 12000, 14000]
     avg = random.choice(avg_choose)
     for i in range(sample_num):
-        delta_scale_choose = [-100, -50, 0, 50, 100]
+        delta_scale_choose = [-300, -150, 0, 150, 300]
         delta_scale = random.choice(delta_scale_choose)
         sample_bandwidth = np.random.normal(loc=avg, scale=cur_scale + delta_scale, size=None)
         new_trace.bandwidth.append(sample_bandwidth)
@@ -25,12 +25,12 @@ def generator(cur_scale, new_filename):
     new_trace.save_trace(PATH + new_filename)
 
 
-SUBTASK_NUM = 5
+SUBTASK_NUM = 6
 TRACE_PER_SUBTASK = 150
 # 5种标准差 -> [600,1200,1800,2400,3000]
 PATH = "../data_trace/network/generate/"
 if __name__ == '__main__':
-    scale_list = [600, 1200, 1800, 2400, 3000]
+    scale_list = [500, 1500, 2500, 3500, 4500, 5500]
     for i in range(SUBTASK_NUM):
         # 生成6种任务
         scale = scale_list[i]

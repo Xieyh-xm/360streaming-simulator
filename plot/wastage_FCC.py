@@ -1,5 +1,11 @@
 import matplotlib.pyplot as plt
-import numpy as np
+from mplfonts.bin.cli import init
+from mplfonts import use_font
+
+init()
+
+version = "CHINESE"
+# version = "ENGLISH"
 
 # PROPOSED = [373.1215288, 0.493688015]
 # RAM360 = [342.5192654, 0.554569719]
@@ -13,7 +19,7 @@ import numpy as np
 # STS_std = [114.4885003, 0.109134169]
 # BS_std = [3.269415944, 0.015234673]
 
-PROPOSED = [397.073, 0.488]
+PROPOSED = [392.18, 0.489]
 RAM360 = [368.191, 0.547]
 TTS = [294.079, 0.529]
 STS = [335.974, 0.464]
@@ -50,8 +56,7 @@ plt.annotate("BS", xy=(BS[0], BS[1]), xytext=(BS[0], BS[1] - 0.030), color='#336
              fontsize=15, zorder=100)
 # plt.errorbar(BS[0], BS[1], xerr=BS_std[0], yerr=BS_std[1], capsize=10, capthick=3, elinewidth=3, color='#3366FF',
 #              label="BS")
-plt.xlabel("Average QoE", fontsize=13)
-plt.ylabel("Wastage ratio", fontsize=13)
+
 # plt.title("QoE vs. Wastage ratio")
 # plt.legend()
 plt.xlim(20, 420)
@@ -60,5 +65,14 @@ plt.xticks(size=12)
 plt.yticks(size=12)
 plt.grid(linestyle='-.', zorder=0)
 # plt.legend(bbox_to_anchor=(0.5, 1.02), loc=8, ncol=10, fontsize=13)
-plt.savefig("./figure/QoE-Wastage-Broadband.pdf", dpi=1000, bbox_inches="tight")
+if version == "ENGLISH":
+    plt.xlabel("Average QoE", fontsize=13)
+    plt.ylabel("Wastage ratio", fontsize=13)
+    plt.savefig("./figure/QoE-Wastage-Broadband.pdf", dpi=1000, bbox_inches="tight")
+else:
+    use_font()
+    plt.xlabel("平均QoE", fontsize=13)
+    plt.ylabel("带宽浪费率", fontsize=13)
+    plt.savefig("./figure/宽带网络下QoE和带宽浪费率的比较.pdf", dpi=1000, bbox_inches="tight")
+
 plt.show()

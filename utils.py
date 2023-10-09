@@ -142,7 +142,7 @@ def get_trace_file(Network_Root_Path, network_trace_id, video_trace_id, user_tra
     user_files.sort(key=take_num)
     user_trace = os.path.join(User_Root_Path + '/video_' + str(video_trace_id), user_files[user_trace_id])
     # print(network_trace)
-    # print(video_trace)
+    print(video_trace)
     # print(user_trace)
     file_path = "test_data_info_new.csv"
     data_row = [network_trace, video_trace, user_trace]

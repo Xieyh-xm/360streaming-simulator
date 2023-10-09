@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-# from deep_rl.ac.actor_critic_et_update import ActorCritic
 from deep_rl.ac.actor_critic_test import ActorCritic
 
 

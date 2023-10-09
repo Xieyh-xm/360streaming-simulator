@@ -6,7 +6,7 @@ import torch
 import random
 from datetime import datetime
 # from deep_rl.rl_env.rl_env import RLEnv
-from deep_rl.rl_env.rl_env_bw_mask import RLEnv, STATE_DIMENSION, ACTION_DIMENSION
+from deep_rl.rl_env.rl_env import RLEnv, STATE_DIMENSION, ACTION_DIMENSION
 from deep_rl.ppo_multi import PPO
 import multiprocessing
 
@@ -23,7 +23,7 @@ def train():
     max_training_timesteps = int(3e6)  # break training loop if timeteps > max_training_timesteps
 
     # ============== Save Model ==============
-    env_name = "non-init-generate"
+    env_name = "non-lecture"
     print("Training environment name : " + env_name)
     save_model_freq = 25  # save model frequency (in num timesteps)
 
@@ -104,46 +104,26 @@ def train():
 
     # =============== 随机化trace ===============
     network_batch = 3
-    # network_dict_size = 240  # generate 240
-    # network_dict_size = 600  # real_trace & sorted_trace
-    network_dict_size = 750  # 一阶段
-
-    # network_dict_size = 290  # fcc 290
-    # network_dict_size = 310  # norway 310
+    network_dict_size = 900  # 一阶段
     network_list = range(network_dict_size)
 
-    video_batch = 2
+    video_batch = 3
     video_dict_size = 18
     video_list = range(video_dict_size)
 
-    user_batch = 2
+    user_batch = 1
     user_dict_size = 48
     user_list = range(user_dict_size)
 
-    ''' 第一阶段课程学习相关变量初始化 '''
-    beta = 0.3
-    history_length = 1
-    past_reward = None
-    past_score = [[] for i in range(SUBTASK_NUM)]
-    avg_increase = 0
-    # ===========================================
-    # training loop
-    first_step = True
-    # past_subtask_prob = [1/SUBTASK_NUM for i in range(SUBTASK_NUM)]
-    # past_subtask_prob[0] = 1
     while time_step <= max_training_timesteps:
         ticks = int(time.time())
         random.seed(ticks)
         ''' 1. 记录训练效果 '''
-        train_net_id = []
-        sum_train_net = 10  # 暂定15条trace
-        train_net_id = random.sample(network_list, sum_train_net)
         time_step += 1
-        print(">>>>> train agent with sorted network")
         reward_q = multiprocessing.Queue()
         buffer_q = multiprocessing.Queue()
         train_jobs = []
-        for net_id in train_net_id:
+        for net_id in random.sample(network_list, network_batch):
             ticks = int(time.time())
             random.seed(ticks)
             for video_id in random.sample(video_list, video_batch):
@@ -172,7 +152,7 @@ def train():
             reward = reward_q.get()
             sum_reward += reward
 
-        session_num = len(train_net_id) * video_batch * user_batch
+        session_num = network_batch * video_batch * user_batch
         print_running_reward = sum_reward / session_num
         print("update network ...")
         ppo_agent.update()  # 更新模型
@@ -205,32 +185,6 @@ def train():
 
 SUBTASK_NUM = 5
 beta = 2
-
-
-def calculate_score(avg_increase, cur_reward, past_reward, cur_entropy, past_data_prob):
-    delta_reward = cur_reward - past_reward
-    # 计算增益的贡献
-    total_increase = np.sum(delta_reward)
-    increase_reward = np.zeros(SUBTASK_NUM)
-    for i in range(SUBTASK_NUM):
-        increase_reward[i] = (total_increase - avg_increase) * past_data_prob[i]
-    # 遗忘的任务需要多训练
-    decrease_reward = np.abs(np.minimum(delta_reward, 0))
-    # 动作不确定高的动作需要多训练
-    score = increase_reward + decrease_reward + beta * cur_entropy
-    print("increase_reward = ", increase_reward)
-    print("decrease_reward = ", decrease_reward)
-    print("cur_entropy = ", cur_entropy)
-    return score
-
-
-def organize_data(sum_train_net, subtask_prob) -> list:
-    train_net_id = []
-    for i in range(len(subtask_prob)):
-        trace_num = int(sum_train_net * subtask_prob[i])
-        per_num = 600 // SUBTASK_NUM
-        train_net_id += random.sample(range(i * per_num, (i + 1) * per_num), trace_num)
-    return train_net_id
 
 
 # buffer [[],[],[]]
@@ -272,96 +226,6 @@ def sub_train(ppo_agent, net_id, video_id, user_id, reward_q, buffer_q):
 
     reward_q.put(sum_reward / action_cnt)
     buffer_q.put([states, actions, logprobs, bw_masks, rewards, is_terminals])
-
-
-def test_in_validation(ppo_agent, seed=6):
-    print(">>>>> test agent in validation")
-    random.seed(seed)
-    # 分为6类，每类100种trace
-    network_dict_size = 600
-    trace_in_subtask = network_dict_size // SUBTASK_NUM
-    network_batch = 4
-    net_list = random.sample(range(trace_in_subtask), network_batch)
-
-    video_test_batch = 3
-    video_dict_size = 18
-    video_list = range(video_dict_size)
-
-    user_test_batch = 1
-    user_dict_size = 48
-    user_list = range(user_dict_size)
-
-    reward_list, entropy_list = [], []
-
-    # 在每一个subtask中测试
-    for subtask in range(SUBTASK_NUM):
-        cur_net_list = [i + subtask * trace_in_subtask for i in net_list]
-        multi_q = multiprocessing.Queue()
-        test_jobs = []
-        for net_id in cur_net_list:
-            for video_id in random.sample(video_list, video_test_batch):
-                for user_id in random.sample(user_list, user_test_batch):
-                    p = multiprocessing.Process(target=test,
-                                                args=(ppo_agent, net_id, video_id, user_id, multi_q))
-                    test_jobs.append(p)
-                    p.start()
-                    # reward, entropy = test(ppo_agent, net_id, video_id, user_id)
-                    # sum_reward += reward
-                    # sum_entropy += entropy
-        for p in test_jobs:
-            p.join()
-
-        sum_score, sum_entropy = 0, 0
-        for job in test_jobs:
-            avg_reward, avg_entropy = multi_q.get()
-            sum_score += avg_reward
-            sum_entropy += avg_entropy
-
-        session_num = len(cur_net_list) * video_test_batch * user_test_batch
-        reward_list.append(sum_score / session_num)
-        entropy_list.append(sum_entropy / session_num)
-    ppo_agent.buffer.clear()
-    print("\033[1;36m avg score in validation = ", str(sum(reward_list) / len(reward_list)), "\033[0m")
-    # print("avg reward in validation = ", str(sum(reward_list) / len(reward_list)))
-    return np.array(reward_list), np.array(entropy_list)
-
-
-def test(ppo_agent, net_id, video_id, user_id, multi_q):
-    env = RLEnv(net_trace)  # creat environment
-    state, bw_mask = env.reset(net_id, video_id, user_id)
-    sum_entropy, sum_reward = 0, 0
-    done = False
-    action_cnt = 0
-    while not done:
-        action_cnt += 1
-        action, action_entropy, _ = ppo_agent.select_action(state, bw_mask, argmax_flag=True)  # 动作 & 动作的不确定度
-        state, bw_mask, reward, done = env.step(action)
-        sum_reward += reward
-        sum_entropy += action_entropy
-    avg_reward = sum_reward / action_cnt
-    avg_entropy = sum_entropy / action_cnt
-    # return avg_reward, avg_entropy
-    multi_q.put([avg_reward, avg_entropy])
-    # env.close()
-
-
-def generate_prob(past_score):
-    ticks = int(time.time())
-    random.seed(ticks)
-    ret = []
-    # 随机采样
-    for task_id in range(len(past_score)):
-        score = random.choice(past_score[task_id])
-        ret.append(score)
-    # 归一化
-    ret = np.array(ret)
-    ret = softmax(ret)
-    return ret
-
-
-def softmax(x):
-    f_x = np.exp(x) / np.sum(np.exp(x))
-    return f_x
 
 
 if __name__ == '__main__':

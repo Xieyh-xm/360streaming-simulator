@@ -17,14 +17,14 @@ class ActorCritic(nn.Module):
         # todo: replace network
         # actor
         self.actor = nn.Sequential(
-            nn.Linear(state_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),  # add
-            nn.ReLU(),
+            nn.Linear(state_dim, 256),
+            nn.LeakyReLU(),
+            nn.Linear(256, 256),
+            nn.LeakyReLU(),
+            nn.Linear(256, 128),  # add
+            nn.LeakyReLU(),
             nn.Linear(128, 64),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(64, action_dim),
             # nn.Softmax(dim=-1)
         )
@@ -32,14 +32,14 @@ class ActorCritic(nn.Module):
 
         # critic
         self.critic = nn.Sequential(
-            nn.Linear(state_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),  # add
-            nn.ReLU(),
+            nn.Linear(state_dim, 256),
+            nn.LeakyReLU(),
+            nn.Linear(256, 256),
+            nn.LeakyReLU(),
+            nn.Linear(256, 128),  # add
+            nn.LeakyReLU(),
             nn.Linear(128, 64),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(64, 1),
         )
         self.critic.to(device)

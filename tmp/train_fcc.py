@@ -4,7 +4,7 @@ import torch
 import random
 from datetime import datetime
 # from deep_rl.rl_env.rl_env import RLEnv
-from deep_rl.rl_env.rl_env_bw_mask import RLEnv
+from deep_rl.rl_env.rl_env import RLEnv
 from deep_rl.ppo import PPO
 
 

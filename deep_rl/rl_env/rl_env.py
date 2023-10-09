@@ -5,15 +5,16 @@ import sys
 sys.path.append("../..")
 import torch
 import numpy as np
-from collections import deque, namedtuple
+from collections import namedtuple
 
-from sabre360_with_qoe import Session, LogFile, LogFileForTraining
+from sabre360_with_qoe import Session, LogFileForTraining
 from view_prediction import TestPrediction
 from utils import get_trace_file, get_tiles_in_viewport, Pose2VideoXY
 from abr.myABR import TestAbr
 from myPrint import print_debug
+from myLog import myLog
 
-STATE_DIMENSION = 31
+STATE_DIMENSION = 36 + 9
 ACTION_DIMENSION = 27
 HISTORY_LENGTH = 1
 MAX_ET_LEN = 5  # s     # todo: 确定最大的ET buffer长度
@@ -22,29 +23,33 @@ TILES_X = 8
 TILES_Y = 8
 BITRATE_LEVEL = 6
 
-SLEEP_PERIOD = 500  # 暂停时长 ms
+SLEEP_PERIOD = 50  # 暂停时长 ms
 
 # ============= Config Setting =============
 default_config = {}
 default_config['ewma_half_life'] = [4, 1]  # seconds
 default_config['buffer_size'] = 5  # seconds
-default_config['log_file'] = 'log/session.log'
+default_config['log_file'] = './log/session.log'
 default_config['abr'] = TestAbr  # 不调用
 
 TiledAction = namedtuple('TiledAction', 'segment tile quality delay')
 
 OUTPUT_LOG = False
 
+LOG_PATH = "./log/train.log"
+LOG_FLAG = False
+
 
 class RLEnv:
-    def __init__(self):
+    def __init__(self, net_trace):
         self.state_dim = STATE_DIMENSION
         self.action_dim = ACTION_DIMENSION
         self.state = torch.zeros(HISTORY_LENGTH, STATE_DIMENSION)
+        self.net_trace = net_trace
 
         # ============= config 配置 =============
         self.net_id, self.video_id, self.user_id = 0, 0, 0
-        network_file, video_file, user_file = get_trace_file(self.net_id, self.video_id, self.user_id)
+        network_file, video_file, user_file = get_trace_file(self.net_trace, self.net_id, self.video_id, self.user_id)
 
         self.config = default_config.copy()
         self.config['bandwidth_trace'] = network_file
@@ -67,9 +72,10 @@ class RLEnv:
 
         # ============= state相关变量 =============
         self.past_k_tput = []
+        self.past_k_playtime = []
         self.avg_level_dict = {}
         self.base_buffer_depth = 0
-        self.enhance_buffer_depth = 0
+        self.enhance_buffer_depth = 0  # 定义为更新过的et层segment个数
         self.latest_BT_segment = -1
         self.latest_ET_segment = -1
         self.pred_view_dict = {}
@@ -77,14 +83,15 @@ class RLEnv:
         self.contents = {}
         self.acc = np.zeros(MAX_ET_LEN)
         self.acc_count = 0
-        return
+
+        self.log = myLog(LOG_PATH)
 
     def reset(self, network_trace_id=0, video_trace_id=0, user_trace_id=0):
         # ============= config配置 =============
         self.net_id = network_trace_id
         self.video_id = video_trace_id
         self.user_id = user_trace_id
-        network_file, video_file, user_file = get_trace_file(self.net_id, self.video_id, self.user_id)
+        network_file, video_file, user_file = get_trace_file(self.net_trace, self.net_id, self.video_id, self.user_id)
 
         self.config = default_config.copy()
         self.config['bandwidth_trace'] = network_file
@@ -107,9 +114,10 @@ class RLEnv:
 
         # ============= state相关变量初始化 =============
         self.past_k_tput.clear()
+        self.past_k_playtime.clear()
         self.avg_level_dict.clear()
         self.base_buffer_depth = 0
-        self.enhance_buffer_depth = 0
+        self.enhance_buffer_depth = 0  # 定义为更新过的et层segment个数
         self.latest_BT_segment = -1
         self.latest_ET_segment = -1
         self.pred_view_dict.clear()
@@ -123,17 +131,30 @@ class RLEnv:
         while len(s_throughput) < 10:
             s_throughput.insert(0, 10000)
         assert len(s_throughput) == 10
+
+        # 播放时间
+        play_time_list = self.past_k_playtime.copy()
+        while len(play_time_list) < 10:
+            play_time_list.insert(0, 0.)
+        assert len(play_time_list) == 10
+        play_time_list = np.array(play_time_list) / 1000.
+
+        # todo 初始化
+        bw_mask = [0 for i in range(ACTION_DIMENSION - 2)]
+
         s_throughput = np.array(s_throughput) / 10000  # 归一化
         self.state[0, 0:10] = torch.Tensor(s_throughput)
 
         # 待下载的数据量
         first_segment = 0
         self.update_viewport_pred(first_segment, first_segment)
-        future_size_in_BT, future_size_in_ET = self.update_download_size(first_segment, self.contents)
+        future_size_in_BT, future_size_in_ET, tile_num_in_ET = self.update_download_size(first_segment)
         s_future_size = future_size_in_BT + future_size_in_ET
         assert len(s_future_size) == 1 + MAX_ET_LEN
         s_future_size = np.array(s_future_size) / 1000000.
         self.state[0, 12:18] = torch.Tensor(s_future_size)
+        tile_num_in_ET = np.array(tile_num_in_ET) / 10.
+        self.state[0, 18:23] = torch.Tensor(tile_num_in_ET)
 
         # 平均码率等级
         start_et_segment = 0
@@ -142,21 +163,24 @@ class RLEnv:
         for segment_idx in range(start_et_segment, end_et_segment + 1):
             s_avg_level.append(0)
         assert len(s_avg_level) == MAX_ET_LEN + 1
-        self.state[0, 18:24] = torch.Tensor(s_avg_level)
+        self.state[0, 23:29] = torch.Tensor(s_avg_level)
 
         # 视点运动信息
         std_x, std_y = self.calculate_pose_spead(first_segment, 0)
-        self.state[0, 24] = std_x * 100
-        self.state[0, 25] = std_y * 100
+        self.state[0, 29] = std_x * 100
+        self.state[0, 30] = std_y * 100
 
         # 视角预测准确度
         self.acc = self.calculate_pred_acc()
-        self.state[0, 26:31] = torch.Tensor(self.acc)
+        self.state[0, 31:36] = torch.Tensor(self.acc)
 
-        return self.state
+        # self.log = myLog(LOG_PATH)
+
+        return self.state, bw_mask
 
     def step(self, ppo_output):
-        # print(ppo_output)
+        if LOG_FLAG:
+            self.log.log_ppo_output(ppo_output)
         one_step_reward, done = 0, False
         is_BT_download = False
         is_ET_download = False
@@ -166,6 +190,9 @@ class RLEnv:
             ''' delay '''
             action.append(TiledAction(-1, -1, -1, SLEEP_PERIOD))
             is_sleep = True
+            print_debug("sleep.\n")
+            if LOG_FLAG:
+                self.log.log_sleep(SLEEP_PERIOD)
         elif ppo_output == ACTION_DIMENSION - 2:
             ''' BT '''
             is_BT_download = True
@@ -173,6 +200,9 @@ class RLEnv:
             assert segment_id <= len(self.session.manifest.segments) - 1
             for tile_id in range(TILES_X * TILES_Y):
                 action.append(TiledAction(segment_id, tile_id, 0, 0))
+            print_debug('download bt segment {}\n'.format(segment_id))
+            if LOG_FLAG:
+                self.log.log_bt_action(segment_id)
         else:
             ''' ET '''
             is_ET_download = True
@@ -181,11 +211,6 @@ class RLEnv:
             if offset != 0:
                 start_idx += 1
             segment_id = math.floor(start_idx + ppo_output // (BITRATE_LEVEL - 1))
-            if segment_id > self.latest_BT_segment:
-                print("segment id = ", segment_id)
-                print("segment_partial = ", self.session.buffer.get_played_segment_partial())
-                print("latest_BT_segment = ", self.latest_BT_segment)
-                print("bt buffer length = ", self.base_buffer_depth)
 
             assert segment_id <= self.latest_BT_segment
             assert segment_id <= len(self.session.manifest.segments) - 1
@@ -208,27 +233,15 @@ class RLEnv:
                 assert len(download_tile) != 0
                 for tile_id in download_tile:
                     action.append(TiledAction(segment_id, tile_id, level, 0))
+            print_debug('download et segment {} at {}\n'.format(segment_id, level))
+            if LOG_FLAG:
+                self.log.log_et_action(segment_id, level)
 
-        if is_ET_download:
-            print_debug("download et buffer")
-        elif is_BT_download:
-            print_debug('download bt buffer')
-        elif is_sleep:
-            print_debug('sleep')
-        print_debug(action)
-        print_debug('played segment = {}'.format(self.session.buffer.get_played_segments()))
-        print_debug('bt buffer length = {}'.format(self.base_buffer_depth))
-        print_debug('et buffer length = {}'.format(self.enhance_buffer_depth))
-
-        # action = self.session.abr.get_action()
-        # is_BT_download = True
-        # is_ET_download = False
         ''' ================== 和环境交互 ===================== '''
         reward = self.stimulator(action)  # 调用stimulator模拟播放&下载
         play_head = self.session.session_info.buffer.get_play_head()  # ms
         if play_head >= self.video_time:  # 当前视频播放完成
             done = True
-        # return self.state, reward, done
 
         ''' ================== 更新缓冲区状态 ================== '''
         buffers = self.session.session_info.get_buffer()
@@ -256,9 +269,9 @@ class RLEnv:
 
         if not is_sleep:  # 仅在不暂停下载时更新
             self.update_throughput(action)
-        self.update_buffer_length(action, is_BT_download, is_ET_download, first_segment, first_segment_offset)
         self.update_viewport_pred(first_segment, first_et_segment)
-        future_size_in_BT, future_size_in_ET = self.update_download_size(first_et_segment, self.contents)
+        self.update_buffer_length(action, is_BT_download, first_et_segment)
+        future_size_in_BT, future_size_in_ET, tile_num_in_ET = self.update_download_size(first_et_segment)
         self.update_avg_level(first_segment, first_et_segment, self.contents)
 
         ''' ================== 计算state ================== '''
@@ -267,8 +280,29 @@ class RLEnv:
         while len(s_throughput) < 10:
             s_throughput.insert(0, 10000)
         assert len(s_throughput) == 10
+        # 不对播放前来不及下载完成的segment进行ET层下载。
+        sum = 0
+        bw_mask = [0 for i in range(ACTION_DIMENSION - 2)]
+        for i in range(len(s_throughput)):
+            sum += 1 / s_throughput[i]
+        pred_tput = len(s_throughput) / sum  # kbps
+
         s_throughput = np.array(s_throughput) / 10000  # 归一化
         self.state[0, 0:10] = torch.Tensor(s_throughput)
+
+        action_bitrate = self.cal_action_bitrate(first_et_segment)
+        for video in range(MAX_ET_LEN):
+            for level in range(BITRATE_LEVEL - 1):
+                bitrate = action_bitrate[video][level]
+                index = video * (BITRATE_LEVEL - 1) + level
+                max_download_time = (first_et_segment + video) * 1000. - playhead
+                download_time = bitrate / pred_tput  # ms
+                # print("pred_tput = ", pred_tput)
+                # print("max_download_time = ", max_download_time)
+                # print("bitrate = ", bitrate)
+                # print("download_time = ", download_time)
+                if download_time > max_download_time:
+                    bw_mask[index] = 1  # 禁止下载
 
         # buffer长度
         self.state[0, 10] = self.base_buffer_depth
@@ -282,38 +316,54 @@ class RLEnv:
         assert len(s_future_size) == 1 + MAX_ET_LEN
         s_future_size = np.array(s_future_size) / 1000000.
         self.state[0, 12:18] = torch.Tensor(s_future_size)
+        tile_num_in_ET = np.array(tile_num_in_ET) / 10.
+        self.state[0, 18:23] = torch.Tensor(tile_num_in_ET)
 
         # 平均码率等级
         end_et_segment = first_et_segment + MAX_ET_LEN
         s_avg_level = []
-        for segment_idx in range(first_et_segment, end_et_segment + 1):
+        if first_segment == first_et_segment:
+            start_segment = first_segment - 1
+        else:
+            start_segment = first_segment
+        for segment_idx in range(start_segment, end_et_segment):
             if segment_idx in self.avg_level_dict:
                 s_avg_level.append(self.avg_level_dict[segment_idx])
             else:
                 s_avg_level.append(0)
         assert len(s_avg_level) == MAX_ET_LEN + 1
-        self.state[0, 18:24] = torch.Tensor(s_avg_level)
+        self.state[0, 23:29] = torch.Tensor(s_avg_level)
 
         # 视点运动信息
         std_x, std_y = self.calculate_pose_spead(first_segment, first_segment_offset)
-        self.state[0, 24] = std_x * 100
-        self.state[0, 25] = std_y * 100
+        self.state[0, 29] = std_x * 100
+        self.state[0, 30] = std_y * 100
 
         # 视角预测准确度(5个step更新一次)
         if self.acc_count % MAX_ET_LEN == 0:
             self.acc = self.calculate_pred_acc()
-            self.acc_count += 1
-        self.state[0, 26:31] = torch.Tensor(self.acc)
+            self.acc_count = 0
+        self.acc_count += 1
+        self.state[0, 31:36] = torch.Tensor(self.acc)
 
-        # print('play_head = ', play_head)
-        # print('video_time = ', self.video_time)
-        # print('download time = ', self.session.total_download_time)
-        # print('base_buffer_depth = ', self.base_buffer_depth)
-        print_debug('action: ', action)
-        print_debug('qoe_one_step = ', self.session.score_one_step)
-        print_debug('\n')
-        # print(acc)
-        return self.state, reward, done
+        # 吞吐量的时间
+        play_time_list = self.past_k_playtime.copy()
+        while len(play_time_list) < 10:
+            play_time_list.insert(0, play_time_list[0])
+        assert len(play_time_list) == 10
+        tput_interval = []
+        for i in range(len(play_time_list) - 1):
+            tput_interval.append(play_time_list[-1] - play_time_list[i])
+        tput_interval = np.array(tput_interval) / 1000.  # ms
+        self.state[0, 36:45] = torch.Tensor(tput_interval)
+
+        if LOG_FLAG:
+            self.log.log_stall_time(self.session.session_info.get_stall_time())
+            self.log.log_playhead(playhead)
+            self.log.log_first_et(first_et_segment)
+            self.log.log_state(self.state)
+            self.log.log_bw_mask(bw_mask)
+        return self.state, bw_mask, reward, done
 
     def update_throughput(self, action):
         ''' 更新历史带宽信息 '''
@@ -321,29 +371,41 @@ class RLEnv:
         for i in range(len(action)):
             size += self.video_size[action[i].segment][action[i].tile][action[i].quality]  # bit
         download_time = self.session.total_download_time  # ms
+        if LOG_FLAG:
+            self.log.log_download_time(download_time)
         assert download_time != 0
         tput = size / download_time  # kbps
         if len(self.past_k_tput) >= TPUT_HISTORY_LEN:
             self.past_k_tput.pop(0)
+            self.past_k_playtime.pop(0)
         self.past_k_tput.append(tput)
+        self.past_k_playtime.append(self.session.buffer.get_play_head())
 
-    def update_buffer_length(self, action, is_BT_download, is_ET_download, first_segment, first_segment_offset):
+    def update_buffer_length(self, action, is_BT_download, first_et_segment):
         is_BT_download_re = False  # todo：可以删掉
         ''' 更新ET和BT buffer的长度 '''
+        # 1. 更新bt长度
         if action[0].segment > self.latest_BT_segment:
             is_BT_download_re = True
         assert is_BT_download_re == is_BT_download
-
         self.latest_BT_segment = max(action[0].segment, self.latest_BT_segment)
-        self.base_buffer_depth = self.session.buffer.get_buffer_depth() - first_segment_offset / 1000.  # 基础层长度即缓冲区实际长度
-        if is_ET_download:  # ET download
-            self.latest_ET_segment = max(self.latest_ET_segment, action[0].segment)  # 增强层长度需要根据实际的更新决策定义
-        self.enhance_buffer_depth = max(self.latest_ET_segment - first_segment + 1 - first_segment_offset / 1000., 0)
+        buffer_depth = self.session.buffer.get_buffer_depth()
+        offset = self.session.buffer.get_played_segment_partial() / 1000.
+        self.base_buffer_depth = buffer_depth - offset  # 基础层长度即缓冲区实际长度
 
-        assert self.latest_BT_segment <= self.latest_BT_segment
-        assert 0 <= self.enhance_buffer_depth <= MAX_ET_LEN + first_segment_offset
-        # print(self.base_buffer_depth)
-        # print(self.enhance_buffer_depth)
+        # 2. 更新et更新过的视频个数
+        self.enhance_buffer_depth = 0
+        for i in range(MAX_ET_LEN):
+            segment_id = first_et_segment + i
+            contents = self.session.buffer.get_buffer_contents(segment_id)
+            if contents is None:
+                continue
+            for idx, tile_level in enumerate(contents):
+                tile_list = self.pred_tiles_dict[segment_id]
+                if tile_level is not None and tile_level > 0 and idx in tile_list:
+                    self.enhance_buffer_depth += 1
+                    break
+        assert self.enhance_buffer_depth <= MAX_ET_LEN
 
     def update_viewport_pred(self, first_segment, first_et_segment):
         ''' 更新视角预测结果 (对buffer内所有tile) '''
@@ -364,11 +426,11 @@ class RLEnv:
         self.pred_tiles_dict = {}
         for seg_idx in range(first_segment, end_segment_idx + 1):
             x_pred = pred_view_dict[seg_idx][0]
-            y_pred = pred_view_dict[seg_idx][0]
+            y_pred = pred_view_dict[seg_idx][1]
             tiles_in_viewport = get_tiles_in_viewport(x_pred, y_pred)
             self.pred_tiles_dict[seg_idx] = tiles_in_viewport
 
-    def update_download_size(self, first_et_segment, contents):
+    def update_download_size(self, first_et_segment):
         ''' 更新待下载的数据量 '''
         # ======> Part 1: segment in BT buffer - 最低质量全画幅下载
         size_in_BT = []
@@ -383,29 +445,57 @@ class RLEnv:
 
         # ======> Part 2: segments in ET buffer - 待更新码率
         size_in_ET = []
+        num_in_ET = []
         for i in range(MAX_ET_LEN):  # 遍历et buffer中的segment
             download_bit = 0
             segment_idx = first_et_segment + i
             pred_tiles = self.pred_tiles_dict[segment_idx]
             if segment_idx >= len(self.video_size) - 1:  # 超过segment idx
                 size_in_ET.append(download_bit)
+                num_in_ET.append(0)
                 continue
 
-            if segment_idx <= self.latest_ET_segment:
-                # 更新ET segment的情况
-                downloaded_tile_info = contents[segment_idx]  # 已下载的tile信息
-                cnt = 0
-                for tile in pred_tiles:  # 下载未被下载过的tile
-                    if downloaded_tile_info[tile] == 0:
-                        download_bit += self.video_size[segment_idx][tile][len(self.bitrate_level) - 1]
-                        cnt += 1
-            else:
-                # 新下载ET segment的情况
-                for tile in pred_tiles:  # 下载全部预测视窗内的tile
-                    download_bit += self.video_size[segment_idx][tile][len(self.bitrate_level) - 1]
+            content = self.session.buffer.get_buffer_contents(segment_idx)
+            if content is None:  # bt层没下载过
+                size_in_ET.append(0)
+                num_in_ET.append(0)
+                continue
+
+            cnt = 0
+            for tile_id in pred_tiles:
+                assert content[tile_id] is not None
+                if content[tile_id] == 0:
+                    cnt += 1
+                    download_bit += self.video_size[segment_idx][tile_id][-1]
             size_in_ET.append(download_bit)
-        assert len(size_in_ET) == MAX_ET_LEN
-        return size_in_BT, size_in_ET  # bits
+            num_in_ET.append(cnt)
+
+        return size_in_BT, size_in_ET, num_in_ET  # bits
+
+    def cal_action_bitrate(self, first_et_segment):
+        ret = []
+        for i in range(MAX_ET_LEN):  # 遍历et buffer中的segment
+            size = []
+            for level in range(1, BITRATE_LEVEL):
+                download_bit = 0
+                segment_idx = first_et_segment + i
+                pred_tiles = self.pred_tiles_dict[segment_idx]
+                if segment_idx >= len(self.video_size) - 1:  # 超过segment idx
+                    size.append(download_bit)
+                    continue
+
+                content = self.session.buffer.get_buffer_contents(segment_idx)
+                if content is None:  # bt层没下载过
+                    size.append(0)
+                    continue
+
+                for tile_id in pred_tiles:
+                    assert content[tile_id] is not None
+                    if content[tile_id] == 0:
+                        download_bit += self.video_size[segment_idx][tile_id][level]
+                size.append(download_bit)
+            ret.append(size)
+        return ret
 
     def update_avg_level(self, first_segment, first_et_segment, contents):
         ''' 更新ET(以及ET前一个)中视窗内所有tile的平均码率等级 '''
@@ -498,7 +588,8 @@ class RLEnv:
             self.session.consumed_download_time = 0
             self.session.network_model.delay(delay)
             wall_time, stall_time = self.session.consume_download_time(delay, time_is_play_time=True)
-            print_debug('Stall time = {} ms'.format(stall_time))
+            # print_debug('Stall time = {} ms'.format(stall_time))
+            self.session.session_info.set_stall_time(stall_time)
             self.session.session_events.trigger_network_delay_event(delay)
 
             ''' 记录每一个播放过segment的pose trace'''
@@ -515,6 +606,7 @@ class RLEnv:
 
             self.session.score_one_step = - 5. * stall_time
             reward = - 5. * stall_time
+            # reward /= 10.
             self.session.total_score += self.session.score_one_step
             return reward
 
@@ -523,19 +615,23 @@ class RLEnv:
         bandwidth_usage = 0
         for i in range(len(action)):
             is_first_tile = True if i == 0 else False
-
             size = self.session.manifest.segments[action[i].segment][action[i].tile][
                 action[i].quality]  # 读取待下载的tile的size
             bandwidth_usage += size
             self.session.consumed_download_time = 0
             ''' 模拟下载过程 '''
             progress = self.session.network_model.download(size, action[i], is_first_tile, None)
-            self.session.total_download_time += progress.time
             progress_list.append(copy.deepcopy(progress))
+            self.session.total_download_time += progress.time
+
+        first_et_seg = self.session.buffer.get_played_segments()
+        if self.session.buffer.get_played_segment_partial() > 0:
+            first_et_seg += 1
 
         ''' 模拟视频播放进程 '''
         wall_time, stall_time = self.session.consume_download_time(self.session.total_download_time)  # ms
-        print_debug('Stall time = {} ms'.format(stall_time))
+        self.session.session_info.set_stall_time(stall_time)
+        # print_debug('Stall time = {} ms'.format(stall_time))
         # todo：计算视角预测准确度
         ''' 记录每一个segment的pose trace'''
         cur_played_segment = self.session.buffer.get_played_segments()  # 正在播放的segment
@@ -572,18 +668,29 @@ class RLEnv:
             delta_var_space = 0
             delta_var_time = 0
             bandwidth_wastage = bandwidth_usage
+            print_debug("|----------------------------|")
+            print_debug("|          TOO LATE          |")
+            print_debug("|----------------------------|")
 
-        # print_debug("delta_quality = {}".format(delta_quality))
-        # print_debug("delta_var_space = {}\tdelta_var_time = {}".format(delta_var_space, delta_var_time))
-        # print_debug("Bandwidth usage = {}".format(bandwidth_usage))
-        # print_debug("Bandwidth wastage = {}".format(bandwidth_wastage))
-        # useful_ratio = max(0, bandwidth_usage - bandwidth_wastage) / bandwidth_usage
-        # print_debug("useful ratio = ", useful_ratio)
+        print_debug("delta_quality = {}".format(delta_quality))
+        print_debug("delta_var_space = {}\tdelta_var_time = {}".format(delta_var_space, delta_var_time))
+        print_debug("Bandwidth usage = {}".format(bandwidth_usage))
+        print_debug("Bandwidth wastage = {}".format(bandwidth_wastage))
+        useful_ratio = max(0, bandwidth_usage - bandwidth_wastage) / bandwidth_usage
+        print_debug("useful ratio = ", useful_ratio)
 
         # 2. 线性组合
-        self.session.score_one_step = 1 * delta_quality - 5. * stall_time - 1. * delta_var_space - 1. * delta_var_time - 0.4 * bandwidth_wastage / 8
+        self.session.score_one_step = 1.0 * delta_quality - 5. * stall_time - 0.1 * delta_var_space - 0.1 * delta_var_time - 0.20 * bandwidth_wastage / 10.
         # 奖励函数
-        reward = 1.0 * delta_quality - 5. * stall_time - 0.1 * delta_var_space - 0.1 * delta_var_time - 0.2 * bandwidth_wastage / 10.
+        # acc = [0.75, 0.68, 0.62, 0.60, 0.57]
+        # weight = 1.0
+        # if action[0].quality > 0:
+        #     index = segment_idx - first_et_seg
+        #     weight = acc[index]
+
+        reward = 1.0 * delta_quality - 5. * stall_time - 0.1 * delta_var_space - 0.1 * delta_var_time - 0.20 * bandwidth_wastage / 10.
+        # reward = 1.0 * delta_quality - 5. * stall_time - 0.1 * delta_var_space - 0.1 * delta_var_time
+        print_debug("reward = {}\n".format(reward))
 
         # self.session.qoe_one_step = delta_quality / 8 - 1.85 * stall_time - 0.5 * delta_var_space - 1 * delta_var_time - 0.5 * bandwidth_usage / 8
         self.session.total_score += self.session.score_one_step
@@ -594,7 +701,6 @@ class RLEnv:
                 self.session.estimator.push(progress)
                 self.session.buffer.put_in_buffer(progress.segment, progress.tile,
                                                   progress.quality)  # 将下载的chunk放入buffer
-                self.session.log_file.log_download(progress)
         return reward
 
     def close(self):

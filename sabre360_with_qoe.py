@@ -49,7 +49,6 @@ from abr.baseline import BaselineAbr, TrivialThroughputAbr, ThreeSixtyAbr
 from abr.myABR import TestAbr
 from view_prediction import TestPrediction
 
-g_debug_cycle = 0
 TILES_X = 8
 TILES_Y = 8
 
@@ -271,9 +270,6 @@ class SessionInfo:
 
     def get_wall_time(self):
         return self.wall_time
-
-    def set_total_download_time(self, time):
-        self.total_download_time = time
 
     def get_total_download_time(self):
         return self.total_download_time
@@ -628,14 +624,7 @@ class UserModel:
             if index + 1 >= len(self.pose_trace):
                 print(self.pose_trace[index + 1].play_time)
                 print(start_time)
-        last_log_time = self.pose_trace[index + 1].play_time
         pose_list.append(self.pose_trace[index + 1].pose)
-        # while index + 1 < len(self.pose_trace) and self.pose_trace[index + 1].play_time <= end_time:
-        #     index += 1
-        #     cur_play_time = self.pose_trace[index].play_time
-        #     if cur_play_time - last_log_time > 100.:
-        #         pose_list.append(self.pose_trace[index].pose)
-        #         last_log_time = cur_play_time
         return pose_list
 
     def get_iterator(self):
@@ -1051,16 +1040,10 @@ class Session:
         return action
 
     def run(self):
-        global g_debug_cycle
         video_time = self.manifest.segment_duration * len(self.manifest.segments)
-        cycle_index = -1
         # 模拟播放过程
         while self.session_info.buffer.get_play_head() < video_time:
             # ----------> 不放弃下载 <----------
-            # 获取最长的播放距离
-            view_log_begin = self.buffer.get_played_segments()
-            view_log_end = view_log_begin + self.buffer.get_buffer_depth() + 1
-            view_log_end = min(view_log_end, len(self.manifest.segments))
             '''=================> 做abr决策 <================='''
             action = self.abr.get_action()  # 返回action列表，包含同一segment下多个tile
             delay = 0
@@ -1109,12 +1092,10 @@ class Session:
                 progress_list.append(copy.deepcopy(progress))
                 self.total_download_time += progress.time
 
-            self.session_info.set_total_download_time(self.total_download_time)
-
             ''' 模拟视频播放进程 '''
             wall_time, stall_time = self.consume_download_time(self.total_download_time)
-
             self.session_info.set_stall_time(stall_time)
+
             ''' 记录每一个segment的pose trace'''
             cur_played_segment = self.buffer.get_played_segments()  # 正在播放的segment
             if self.buffer.get_played_segment_partial() == 0:  # 尚未开始播放
@@ -1260,8 +1241,6 @@ class Session:
         if segment_idx == 0:
             delta_var_time = 0
         else:
-            quality_var_time = 0
-            next_quality_var_time = 0
             # todo: update会影响前和后一个segment的质量差，分为前后 [和前面的差，和后面的差]
             prev_quality = self.buffer.get_segment_quality(segment_idx - 1)
             cur_quality = self.buffer.get_segment_quality(segment_idx)
@@ -1275,7 +1254,6 @@ class Session:
             self.buffer.save_quality_var_time(segment_idx, quality_var_time)
 
             delta_var_time = quality_var_time - last_quality_var_time  # 计算时需要加上上次的，减掉下次的
-        # print("delta_var_time = ", delta_var_time)
         return delta_var_time
 
     def calculate_bandwidth_wastage(self, pose_list, segment_idx, download_tile):
@@ -1293,7 +1271,6 @@ class Session:
                     # 重复下载
                     wastage += size_info[tile_idx][buffer_contents[tile_idx]]
         wastage = wastage / (len(pose_list) * 1024.)
-        # print("wastage = ", 0.05 * wastage / 8)
         return wastage
 
     def set_algro_agent(self, agent):

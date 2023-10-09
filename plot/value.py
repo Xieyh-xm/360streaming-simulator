@@ -1,16 +1,20 @@
-import numpy as np
 import matplotlib.pyplot as plt
+from mplfonts.bin.cli import init
+from mplfonts import use_font
 
+init()
 
-def draw_value(avg_value, std_value, dataset):
+def draw_value(version, avg_value, dataset):
     # 写入data
     # Quality(kbps) ↑	Var space(kbps) ↓	Var time(kbps) ↓	Stall time(ms) ↓	QoE ↑
-    labels = ['Quality(x10)', 'Spatial var(x10)', 'Temporal var(x10)', 'Rebuffering']
+    if version == "ENGLISH":
+        labels = ['Quality(x10)', 'Spatial var(x10)', 'Temporal var(x10)', 'Rebuffering']
+    else:
+        labels = ['平均质量(x10)', '空间平滑度(x10)', '时间平滑度(x10)', '卡顿时长']
     # 调整除stall time的data
     for i in range(len(avg_value)):
         for j in range(len(avg_value[0]) - 1):
             avg_value[i][j] /= 10
-            std_value[i][j] /= 10
 
     # 设置柱形的间隔
     width = 0.18  # 柱形的宽度
@@ -40,53 +44,55 @@ def draw_value(avg_value, std_value, dataset):
             edgecolor='k', zorder=100)
     ax1.bar(x5_list, avg_value[4], width=width, label='DCRL360', color='#FF6721', align='edge', edgecolor='k',
             zorder=100)
-
-    plt.xticks(x_list, labels=labels, horizontalalignment='center', fontsize=15)
-    plt.legend(bbox_to_anchor=(0.5, 1.), loc=8, ncol=10, fontsize=13)
+    plt.yticks(fontsize=13)
+    # plt.legend(bbox_to_anchor=(0.5, 1.), loc=8, ncol=10, fontsize=13)
+    plt.legend(bbox_to_anchor=(0.5, 1.), loc=8, ncol=10, fontsize=15)
 
     plt.tight_layout()
     plt.grid(axis="y", linestyle='-.', zorder=0)
     # plt.title("QoE in {}".format(dataset))
-    plt.ylabel("Average value", fontsize=15)
-    plt.savefig("./figure/value_in_{}.pdf".format(dataset), bbox_inches="tight")
+    if version == "ENGLISH":
+        plt.xticks(x_list, labels=labels, horizontalalignment='center', fontsize=15.5)
+        plt.ylabel("Average value", fontsize=15.5)
+        plt.savefig("./figure/value_in_{}.pdf".format(dataset), bbox_inches="tight")
+    else:
+        use_font()
+        plt.xticks(x_list, labels=labels, horizontalalignment='center', fontsize=15.5)
+        plt.ylabel("各指标均值", fontsize=15.5)
+        plt.savefig("./figure/均值-{}.pdf".format(dataset), bbox_inches="tight")
     plt.show()
 
 
 # quality	Var_space	Var_time	Stall_time
 
-PROPOSED_in_fcc = [421.928, 109.430, 88.921, 1.004]
+PROPOSED_in_fcc = [420.32, 109.59, 105.10, 1.33]
 RAM360_in_fcc = [405.545, 197.775, 103.772, 1.440]
 TTS_in_fcc = [313.414, 79.081, 90.530, 0.475]
 STS_in_fcc = [375.299, 99.724, 80.230, 4.266]
 BS_in_fcc = [50.000, 0.000, 0.000, 0.475]
 
-PROPOSED_std_in_fcc = [113.715, 46.447, 23.975, 1.901]
-RAM360_std_in_fcc = [116.332, 43.679, 26.143, 2.399]
-TTS_std_in_fcc = [86.862, 35.883, 22.812, 0.397]
-STS_std_in_fcc = [99.431, 42.204, 18.328, 8.913]
-BS_std_in_fcc = [0.000, 0.000, 0.000, 0.397]
-
-PROPOSED_in_norway = [384.414, 98.527, 85.471, 3.369]
+PROPOSED_in_norway = [383.82, 99.54, 95.55, 2.94]
 RAM360_in_norway = [361.889, 175.083, 104.171, 3.423]
 TTS_in_norway = [281.063, 69.050, 85.499, 0.987]
 STS_in_norway = [316.808, 82.208, 76.271, 22.274]
 BS_in_norway = [50.000, 0.000, 0.000, 0.607]
 
-PROPOSED_std_in_norway = [107.151, 45.622, 21.599, 8.386]
-RAM360_std_in_norway = [103.555, 39.776, 28.644, 7.838]
-TTS_std_in_norway = [78.909, 33.495, 22.402, 2.560]
-STS_std_in_norway = [86.671, 38.399, 18.573, 47.803]
-BS_std_in_norway = [0.000, 0.000, 0.000, 0.677]
+PROPOSED_in_5G = [567.18, 138.32, 56.68, 0.25]
+RAM360_in_5G = [469.29, 155.65, 50.56, 0.25]
+TTS_in_5G = [542.59, 140.05, 69.87, 0.58]
+STS_in_5G = [536.92, 142.55, 63.10, 5.11]
+BS_in_5G = [49.58, 0.00, 0.00, 0.25]
 
 plt.rcParams['figure.figsize'] = (9.0, 4.0)
 
 if __name__ == '__main__':
+    version = "CHINESE"
+    # version = "ENGLISH"
     avg_value = [BS_in_norway, STS_in_norway, TTS_in_norway, RAM360_in_norway, PROPOSED_in_norway]
-    std_value = [BS_std_in_norway, STS_std_in_norway, TTS_std_in_norway, RAM360_std_in_norway, PROPOSED_std_in_norway]
-    draw_value(avg_value, std_value, dataset="HSDPA")
+    draw_value(version, avg_value, dataset="HSDPA")
 
     avg_value = [BS_in_fcc, STS_in_fcc, TTS_in_fcc, RAM360_in_fcc, PROPOSED_in_fcc]
-    std_value = [BS_std_in_fcc, STS_std_in_fcc, TTS_std_in_fcc, RAM360_std_in_fcc, PROPOSED_std_in_fcc]
-    draw_value(avg_value, std_value, dataset="Broadband")
+    draw_value(version, avg_value, dataset="Broadband")
 
-
+    avg_value = [BS_in_5G, STS_in_5G, TTS_in_5G, RAM360_in_5G, PROPOSED_in_5G]
+    draw_value(version, avg_value, dataset="5G")

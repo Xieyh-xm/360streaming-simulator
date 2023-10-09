@@ -17,14 +17,14 @@ class ActorCritic(nn.Module):
         # todo: replace network
         # actor
         self.actor = nn.Sequential(
-            nn.Linear(state_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),  # add
-            nn.ReLU(),
+            nn.Linear(state_dim, 256),
+            nn.LeakyReLU(),
+            nn.Linear(256, 256),
+            nn.LeakyReLU(),
+            nn.Linear(256, 128),  # add
+            nn.LeakyReLU(),
             nn.Linear(128, 64),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(64, action_dim),
             # nn.Softmax(dim=-1)
         )
@@ -32,14 +32,14 @@ class ActorCritic(nn.Module):
 
         # critic
         self.critic = nn.Sequential(
-            nn.Linear(state_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),  # add
-            nn.ReLU(),
+            nn.Linear(state_dim, 256),
+            nn.LeakyReLU(),
+            nn.Linear(256, 256),
+            nn.LeakyReLU(),
+            nn.Linear(256, 128),  # add
+            nn.LeakyReLU(),
             nn.Linear(128, 64),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(64, 1),
         )
         self.critic.to(device)
@@ -58,8 +58,8 @@ class ActorCritic(nn.Module):
         # mask[(et_buffer_len + 1) * bit_level_et:25] = 1
         # todo 3. 不对播放前来不及下载完成的segment进行ET层下载。
         ''' 测试掩蔽规则 '''
-        for i in range(len(bw_mask)):
-            mask[i] = max(bw_mask[i], mask[i])
+        # for i in range(len(bw_mask)):
+        #     mask[i] = max(bw_mask[i], mask[i])
 
         # 4. 不选中没有可更新数据的segment进行下载
         download_bit_bt = state_numpy[0, 12]  # bt待下载数据量
@@ -76,9 +76,9 @@ class ActorCritic(nn.Module):
             #
             ''' 测试掩蔽规则 '''
             # default 4.0
-            if bt_buffer_len <= 4.0:  # 2. bt_buffer_len至少5个chunk
-                mask[0:self.action_dim - 2] = 1
-                mask[self.action_dim - 1] = 1
+            # if bt_buffer_len <= 4.0:  # 2. bt_buffer_len至少5个chunk
+            #     mask[0:self.action_dim - 2] = 1
+            #     mask[self.action_dim - 1] = 1
 
         download_bit_et = state_numpy[0, 13:18]  # et待下载数据量
         for segment_id in range(5):

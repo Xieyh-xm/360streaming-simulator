@@ -7,8 +7,8 @@ from tqdm import tqdm
 import multiprocessing
 
 # csv_file_path = "./test_result/Proposed_Norway.csv"
-csv_file_path = "test_result/stage-generate_0_50_norway.csv"
-
+csv_file_path = "test_result/stage1-5G.csv"
+TestABR = "Melody"
 # net = "norway-9M"
 # net = "fcc-9M"
 # net = "4g-logs"
@@ -16,7 +16,8 @@ csv_file_path = "test_result/stage-generate_0_50_norway.csv"
 # net = "fcc-scaling"
 # net = "norway-scaling"
 # net = "fcc-test"
-net = "norway-test"
+# net = "norway-test"
+net = "5G-test"
 if net == "fcc-scaling":
     net_trace = "./data_trace/network/fcc-scaling"
     NETWORK_TRACE_NUM = 290
@@ -41,6 +42,18 @@ elif net == "norway-test":
 elif net == "fcc-test":
     net_trace = "./data_trace/network/fcc-test"
     NETWORK_TRACE_NUM = 20
+elif net == "low":
+    net_trace = "./data_trace/network/low"
+    NETWORK_TRACE_NUM = 13
+elif net == "mid":
+    net_trace = "./data_trace/network/mid"
+    NETWORK_TRACE_NUM = 13
+elif net == "high":
+    net_trace = "./data_trace/network/high"
+    NETWORK_TRACE_NUM = 13
+elif net == "5G-test":
+    net_trace = "./data_trace/network/5G-test"
+    NETWORK_TRACE_NUM = 20
 
 VIDEO_TRACE_NUM = 18
 USER_TRACE_NUM = 48
@@ -52,9 +65,7 @@ default_config['buffer_size'] = 5  # seconds
 default_config['log_file'] = 'log/session.log'
 
 # ================= 测试算法 =================
-# TestABR = "RAM360"
-# TestABR = "TTS"
-TestABR = "Melody"
+
 if TestABR == "RAM360":
     from abr.RAM360 import RAM360
 
@@ -64,9 +75,17 @@ elif TestABR == "TTS":
 
     default_config['abr'] = TTS
 elif TestABR == "Melody":
-    from deep_rl.solution import Melody
+    from deep_rl.solution_new import Melody
 
     default_config['abr'] = Melody
+elif TestABR == "ERP":
+    from abr.ERP import ERP
+
+    default_config['abr'] = ERP
+elif TestABR == "STS":
+    from abr.STS import STS
+
+    default_config['abr'] = STS
 
 
 def test(net_id, video_id, user_id, avgs_q):
@@ -134,5 +153,5 @@ def test_network_samples(network_batch=NETWORK_TRACE_NUM, video_batch=VIDEO_TRAC
 random.seed(10)
 if __name__ == '__main__':
     create_csv(csv_file_path)
-    test_network_samples(network_batch=20, video_batch=4, user_batch=5)
+    test_network_samples(network_batch=NETWORK_TRACE_NUM, video_batch=4, user_batch=5)
     # test(4, 2, 2)

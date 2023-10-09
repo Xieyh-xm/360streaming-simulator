@@ -1,10 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mplfonts.bin.cli import init
+from mplfonts import use_font
 
+init()
 
-def draw_qoe(avg_value):
+def draw_qoe(version, avg_value):
     # 写入data
-    labels = ['Low', 'Medium', 'High']
+    if version == "ENGLISH":
+        labels = ['Low', 'Medium', 'High']
+    else:
+        labels = ['低', '中', '高']
 
     # 设置柱形的间隔
     width = 0.18  # 柱形的宽度
@@ -34,29 +40,35 @@ def draw_qoe(avg_value):
             edgecolor='k', zorder=100)
     ax1.bar(x5_list, avg_value[4], width=width, label='DCRL360', color='#FF6721', align='edge', edgecolor='k',
             zorder=100)
-
-    plt.xticks(x_list, labels=labels, horizontalalignment='center', fontsize=16)
     plt.legend(bbox_to_anchor=(0.5, 1.), loc=8, ncol=10, fontsize=13)
 
     plt.tight_layout()
     plt.grid(axis="y", linestyle='-.', zorder=0)
     # plt.title("QoE in {}".format(dataset))
-    plt.ylabel("Average QoE", fontsize=13)
-    plt.savefig("./figure/qoe_in_diff_net.pdf", dpi=1000, bbox_inches="tight")
-    plt.show()
-
+    if version == "ENGLISH":
+        plt.xticks(x_list, labels=labels, horizontalalignment='center', fontsize=16)
+        plt.ylabel("Average QoE", fontsize=13)
+        plt.savefig("./figure/qoe_in_diff_net.pdf", dpi=1000, bbox_inches="tight")
+    else:
+        use_font()
+        plt.xticks(x_list, labels=labels, horizontalalignment='center', fontsize=16)
+        plt.ylabel("平均QoE", fontsize=13)
+        plt.savefig("./figure/不同网络下QoE.pdf", dpi=1000, bbox_inches="tight")
+    # plt.show()
 
 # FCC Norway
 
-PROPOSED_qoe = [300.0389874, 201.3453373, 153.7831649]
-RAM360_qoe = [234.1366, 173.4347927, 83.99505393]
-TTS_qoe = [218.18706, 153.0745273, 100.2073635]
-STS_qoe = [238.2409437, 171.369722, 71.4227296]
-BS_qoe = [48.67653576, 47.85678362, 48.63499584]
+PROPOSED_qoe = [328.55, 273.50, 213.89]
+RAM360_qoe = [294.17, 234.02, 148.40]
+TTS_qoe = [249.79, 216.95, 167.24]
+STS_qoe = [304.41, 176.47, 76.20]
+BS_qoe = [48.53, 48.54, 46.69]
 
 plt.rcParams['figure.figsize'] = (9.0, 4.0)
 
 if __name__ == '__main__':
+    version = "CHINESE"
+    # version = "ENGLISH"
     avg_value = [BS_qoe, STS_qoe, TTS_qoe, RAM360_qoe, PROPOSED_qoe]
     # std_value = [BS_std, STS_std, TTS_std, RAM360_std, PROPOSED_std]
-    draw_qoe(avg_value)
+    draw_qoe(version, avg_value)

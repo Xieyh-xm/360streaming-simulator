@@ -3,7 +3,10 @@ import random
 from sabre360_with_qoe import Session
 from utils import get_trace_file
 import numpy as np
-from myLog import myLog
+# from myLog import myLog
+import multiprocessing
+
+multiprocessing.set_start_method("fork")
 
 # ============= Config Setting =============
 default_config = {}
@@ -23,8 +26,8 @@ user_batch = 4
 user_dict_size = 48
 user_list = range(user_dict_size)
 
-mylog = myLog(path="log/lecture.log")
-logger = mylog.get_log()
+# mylog = myLog(path="log/lecture.log")
+# logger = mylog.get_log()
 
 MAX_ENV = 30
 
@@ -44,28 +47,48 @@ class Curriculum:
         self.cnt = 0
 
     def update_hard_env(self):
-        logger.info("update_hard_env...")
+        print("update_hard_env...")
+        # logger.info("update_hard_env...")
         ''' 挑选困难环境 '''
         # 1. 随机sample一些trace测试
         chosen_network, chosen_video, chosen_user = self.random_choose_trace()
-        cnt = 0
+
         for network_id in chosen_network:
+            print("network_id = {}".format(network_id))
+            gapInfo_q = multiprocessing.Queue()
+            test_jobs = []
             for video_id in chosen_video:
                 for user_id in chosen_user:
-                    cnt += 1
-                    RAM360_qoe = self.test_RAM360(network_id, video_id, user_id)
-                    TTS_qoe = self.test_TTS(network_id, video_id, user_id)
-                    rl_qoe = self.test_rl_model(network_id, video_id, user_id)
-                    gap = max(RAM360_qoe, TTS_qoe) - rl_qoe  # 2. 计算gap
-                    if gap > 0:  # 3. 加入hard list
-                        if len(self.hard_network_id) >= MAX_ENV:
-                            self.pop_env()
-                        self.hard_network_id.append(network_id)
-                        self.hard_video_id.append(video_id)
-                        self.hard_pose_id.append(user_id)
+                    p = multiprocessing.Process(target=self.add_hard_env,
+                                                args=(network_id, video_id, user_id, gapInfo_q))
+                    test_jobs.append(p)
+                    p.start()
+
+            for job in test_jobs:
+                while job.is_alive():
+                    while False == gapInfo_q.empty():
+                        gapInfo = gapInfo_q.get()
+                        gap = gapInfo[0]
+                        if gap <= 0: continue
+                        if len(self.hard_network_id) >= MAX_ENV: self.pop_env()
+                        self.hard_network_id.append(gapInfo[1])
+                        self.hard_video_id.append(gapInfo[2])
+                        self.hard_pose_id.append(gapInfo[3])
+            for job in test_jobs:
+                job.join()
+
         if len(self.hard_network_id) == 0:
             return False
         return True
+
+    def add_hard_env(self, network_id, video_id, user_id, gapInfo_q):
+        ''' 测试环境，返回gap & network id & video id & user id'''
+        RAM360_qoe = self.test_RAM360(network_id, video_id, user_id)
+        TTS_qoe = self.test_TTS(network_id, video_id, user_id)
+        rl_qoe = self.test_rl_model(network_id, video_id, user_id)
+        gap = max(RAM360_qoe, TTS_qoe) - rl_qoe  # 2. 计算gap
+        gapInfo_q.put([gap, network_id, video_id, user_id])
+        return
 
     def test_rl_model(self, network_id, video_id, user_id):
         ''' 测试rl model，返回平均 qoe '''
@@ -132,7 +155,7 @@ class Curriculum:
         return qoe
 
     def random_choose_trace(self):
-        logger.info("random_choose_trace...")
+        # logger.info("random_choose_trace...")
         ticks = int(time.time())
         random.seed(ticks)
 
@@ -143,6 +166,7 @@ class Curriculum:
         return chosen_network, chosen_video, chosen_user
 
     def curriculum_training(self):
+        # todo: 改成多进程?
         ''' 课程学习 '''
         self.ppo_agent.buffer.clear()
         sum_reward = 0.0
@@ -173,6 +197,3 @@ class Curriculum:
         self.hard_network_id.pop(0)
         self.hard_pose_id.pop(0)
         self.hard_video_id.pop(0)
-
-
-

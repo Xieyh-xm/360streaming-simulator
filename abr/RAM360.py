@@ -79,6 +79,9 @@ class RAM360(TiledAbr):
         optimal_action = None
         model_x, model_y = self.session_info.get_viewport_predictor().build_model(max_download_segment_id)
         for segment_id in range(first_unplayed_segment, max_download_segment_id + 1):  # 遍历可下载的每一个segment
+            if segment_id != max_download_segment_id and max_download_segment_id - segment_id > 10.:
+                continue
+
             '''============= 视点预测 ============='''
             if model_x is None:
                 self.pred_view[segment_id] = (0.5, 0.5)

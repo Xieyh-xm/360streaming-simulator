@@ -22,7 +22,7 @@ TPUT_HISTORY_LEN = 10  # 历史吞吐量
 MAX_ET_LEN = 5  # 最大的ET buffer长度 s
 
 ''' PPO设置 '''
-STATE_DIMENSION = 36
+STATE_DIMENSION = 36 + 9
 HISTORY_LENGTH = 1
 ACTION_DIMENSION = 27
 # NN_MODEL = "deep_rl/model/PPO_et_update_0_650.pth"
@@ -71,6 +71,7 @@ class Melody(TiledAbr):
         # ============ 初始化State及相关变量 ============
         self.state = torch.zeros(HISTORY_LENGTH, STATE_DIMENSION)
         self.past_k_tput = []
+        self.past_k_playtime = []
         self.avg_level_dict = {}
         self.base_buffer_depth = 0
         self.enhance_buffer_depth = 0
@@ -98,6 +99,13 @@ class Melody(TiledAbr):
         assert len(s_throughput) == 10
         s_throughput = np.array(s_throughput) / 10000  # 归一化
         self.state[0, 0:10] = torch.Tensor(s_throughput)
+
+        # 播放时间
+        play_time_list = self.past_k_playtime.copy()
+        while len(play_time_list) < 10:
+            play_time_list.insert(0, 0.)
+        assert len(play_time_list) == 10
+        play_time_list = np.array(play_time_list) / 1000.
 
         # 待下载的数据量
         first_segment = 0
@@ -132,11 +140,11 @@ class Melody(TiledAbr):
         ''' 决策 '''
         if self.first_step:
             self.initialize()  # 初始化state
-            ppo_output = self.ppo_agent.select_action(self.state, self.bw_mask)
+            ppo_output, _ = self.ppo_agent.select_action(self.state, self.bw_mask)
             self.first_step = False
         else:
             self.calculate_state()  # 更新state
-            ppo_output = self.ppo_agent.select_action(self.state, self.bw_mask)
+            ppo_output, _ = self.ppo_agent.select_action(self.state, self.bw_mask)
 
         if LOG_FLAG:
             self.log.log_state(self.state)
@@ -247,6 +255,17 @@ class Melody(TiledAbr):
         self.acc_count += 1
         self.state[0, 31:36] = torch.Tensor(self.acc)
 
+        # 吞吐量的时间
+        play_time_list = self.past_k_playtime.copy()
+        while len(play_time_list) < 10:
+            play_time_list.insert(0, play_time_list[0])
+        assert len(play_time_list) == 10
+        tput_interval = []
+        for i in range(len(play_time_list) - 1):
+            tput_interval.append(play_time_list[-1] - play_time_list[i])
+        tput_interval = np.array(tput_interval) / 1000.  # ms
+        self.state[0, 36:45] = torch.Tensor(tput_interval)
+
     def transform_action(self, ppo_output):
         action = []
         self.is_sleep = False
@@ -315,7 +334,9 @@ class Melody(TiledAbr):
         tput = size / download_time  # kbps
         if len(self.past_k_tput) >= TPUT_HISTORY_LEN:
             self.past_k_tput.pop(0)
+            self.past_k_playtime.pop(0)
         self.past_k_tput.append(tput)
+        self.past_k_playtime.append(self.buffer.get_play_head())
 
     def update_buffer_length(self, action, is_BT_download, first_et_segment):
         ''' 更新ET和BT buffer的长度 '''
